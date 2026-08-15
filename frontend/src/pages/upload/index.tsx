@@ -1,4 +1,4 @@
-import type { FormEvent, RefObject } from "react";
+import type { RefObject } from "react";
 import type {
   CellValueChangedEvent,
   ColDef,
@@ -15,11 +15,22 @@ import { observer } from "mobx-react-lite";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from "ag-grid-community";
 import { Dropzone } from "@mantine/dropzone";
-import { Alert, Badge, Box, Button, Checkbox, Group, Popover, ScrollArea, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
+import { Alert, Badge, Box, Button, Checkbox, Group, Menu, Popover, ScrollArea, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
 import { store } from "../../stores/store.ts";
 import type { DisplayRow } from "../../stores/store.ts";
 import { type ValidClaim, claimSchema } from "../../utils/claims.schema.ts";
-import { IconAlertTriangle, IconArrowRight, IconCheck, IconCircleCheck, IconCloudUpload, IconColumns, IconFile, IconX } from "../../components/Icons.tsx";
+import {
+  IconAlertTriangle,
+  IconArrowRight,
+  IconCheck,
+  IconChevronDown,
+  IconCircleCheck,
+  IconCloudUpload,
+  IconColumns,
+  IconFile,
+  IconTrash,
+  IconX,
+} from "../../components/Icons.tsx";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -204,15 +215,19 @@ const UploadPage = observer(() => {
     store.updateRow(event.data.id, event.colDef.field, String(event.newValue ?? ""));
   }
 
-  const handleApprove = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleApprove = () => {
     if (!gridRef.current || selectedCount === 0) return;
-
     const selected = gridRef.current.api.getSelectedRows();
     const selectedRowIds = new Set(selected.map((r) => r.id));
     const claims = store.allRows.filter((r) => selectedRowIds.has(r.id) && r.isValid && r.validData).map((r) => r.validData!) satisfies ValidClaim[];
-
     void store.submitApproval(claims);
+  };
+
+  const handleRemoveSelected = () => {
+    if (!gridRef.current || selectedCount === 0) return;
+    const ids = gridRef.current.api.getSelectedRows().map((r) => r.id);
+    store.removeRows(ids);
+    setSelectedCount(0);
   };
 
   return (
@@ -359,44 +374,56 @@ const UploadPage = observer(() => {
 
       {/* Claims table */}
       {store.hasData && (
-        <form onSubmit={handleApprove} style={{ display: "contents" }}>
-          <Stack gap="sm" style={{ flex: 1 }}>
-            <Group justify="space-between" align="center">
-              <Group gap="xs">
-                <Badge size="lg" variant="light" color="green" leftSection={<IconCheck size={12} />}>
-                  {store.validClaims.length} valid
+        <Stack gap="sm" style={{ flex: 1 }}>
+          <Group justify="space-between" align="center">
+            <Group gap="xs">
+              <Badge size="lg" variant="light" color="green" leftSection={<IconCheck size={12} />}>
+                {store.validClaims.length} valid
+              </Badge>
+              {store.invalidRows.length > 0 && (
+                <Badge size="lg" variant="light" color="orange" leftSection={<IconAlertTriangle size={12} />}>
+                  {store.invalidRows.length} invalid — not selectable
                 </Badge>
-                {store.invalidRows.length > 0 && (
-                  <Badge size="lg" variant="light" color="orange" leftSection={<IconAlertTriangle size={12} />}>
-                    {store.invalidRows.length} invalid — not selectable
-                  </Badge>
-                )}
-              </Group>
-              <Group gap="xs">
-                <ColumnToggle gridRef={gridRef} />
-                <Button type="submit" leftSection={<IconCircleCheck size={16} />} disabled={selectedCount === 0 || store.isSubmitting} loading={store.isSubmitting}>
-                  Approve {selectedCount > 0 ? `(${selectedCount})` : ""}
-                </Button>
-              </Group>
+              )}
             </Group>
+            <Group gap="xs">
+              <ColumnToggle gridRef={gridRef} />
+              <Menu shadow="md" width={220} position="bottom-end" disabled={selectedCount === 0}>
+                <Menu.Target>
+                  <Button rightSection={<IconChevronDown size={14} />} disabled={selectedCount === 0} loading={store.isSubmitting}>
+                    Actions {selectedCount > 0 ? `(${selectedCount})` : ""}
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Label>Selected rows</Menu.Label>
+                  <Menu.Item leftSection={<IconCircleCheck size={14} />} onClick={handleApprove} disabled={store.isSubmitting}>
+                    Approve selected
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={handleRemoveSelected}>
+                    Remove selected
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Group>
+          </Group>
 
-            <Box style={{ height: 520 }}>
-              <AgGridReact<DisplayRow>
-                ref={gridRef}
-                theme={gridTheme}
-                rowData={rowData}
-                columnDefs={COL_DEFS}
-                getRowId={getRowId}
-                rowSelection={ROW_SELECTION}
-                getRowStyle={getRowStyle}
-                onRowDataUpdated={onRowDataUpdated}
-                onSelectionChanged={onSelectionChanged}
-                defaultColDef={{ sortable: true, resizable: true, filter: true, editable: true }}
-                onCellValueChanged={onCellValueChanged}
-              />
-            </Box>
-          </Stack>
-        </form>
+          <Box style={{ height: 520 }}>
+            <AgGridReact<DisplayRow>
+              ref={gridRef}
+              theme={gridTheme}
+              rowData={rowData}
+              columnDefs={COL_DEFS}
+              getRowId={getRowId}
+              rowSelection={ROW_SELECTION}
+              getRowStyle={getRowStyle}
+              onRowDataUpdated={onRowDataUpdated}
+              onSelectionChanged={onSelectionChanged}
+              defaultColDef={{ sortable: true, resizable: true, filter: true, editable: true }}
+              onCellValueChanged={onCellValueChanged}
+            />
+          </Box>
+        </Stack>
       )}
     </Stack>
   );

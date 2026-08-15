@@ -174,6 +174,11 @@ class AppStore {
     };
   };
 
+  removeRows = (ids: string[]): void => {
+    const idSet = new Set(ids);
+    this.allRows = this.allRows.filter((r) => !idSet.has(r.id));
+  };
+
   dismissErrors = (): void => {
     this.showErrors = false;
   };
