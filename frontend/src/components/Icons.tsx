@@ -63,3 +63,11 @@ export const IconArrowRight = ({ size }: IconProps) => (
     <path d="M13 6l6 6" />
   </Icon>
 );
+
+export const IconColumns = ({ size }: IconProps) => (
+  <Icon size={size}>
+    <path d="M3 5a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-14z" />
+    <path d="M9 4v16" />
+    <path d="M15 4v16" />
+  </Icon>
+);

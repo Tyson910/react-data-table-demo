@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { FormEvent, RefObject } from "react";
 import type { ColDef, GetRowIdParams, IRowNode, RowDataUpdatedEvent, RowSelectionOptions, SelectionChangedEvent } from "ag-grid-community";
 
 import { useRef, useState } from "react";
@@ -6,11 +6,11 @@ import { observer } from "mobx-react-lite";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from "ag-grid-community";
 import { Dropzone } from "@mantine/dropzone";
-import { Alert, Badge, Box, Button, Group, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
+import { Alert, Badge, Box, Button, Checkbox, Group, Popover, ScrollArea, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
 import { store } from "../../stores/store.ts";
 import type { DisplayRow } from "../../stores/store.ts";
 import type { ValidClaim } from "../../utils/claims.schema.ts";
-import { IconAlertTriangle, IconArrowRight, IconCheck, IconCircleCheck, IconCloudUpload, IconFile, IconX } from "../../components/Icons.tsx";
+import { IconAlertTriangle, IconArrowRight, IconCheck, IconCircleCheck, IconCloudUpload, IconColumns, IconFile, IconX } from "../../components/Icons.tsx";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -24,12 +24,8 @@ const ROW_SELECTION: RowSelectionOptions<DisplayRow> = {
   isRowSelectable: (node: IRowNode<DisplayRow>) => node.data?.isValid ?? false,
 };
 
-const COL_DEFS: ColDef<DisplayRow>[] = [
-  {
-    field: "Claim ID",
-    minWidth: 160,
-    pinned: "left",
-  },
+const COL_DEFS = [
+  { field: "Claim ID", minWidth: 160, pinned: "left" },
   { field: "Subscriber ID", minWidth: 140 },
   { field: "Claim Status", minWidth: 130 },
   { field: "Billed", minWidth: 110 },
@@ -37,7 +33,65 @@ const COL_DEFS: ColDef<DisplayRow>[] = [
   { field: "Paid", minWidth: 110 },
   { field: "Provider Name", minWidth: 180, flex: 1 },
   { field: "Service Date", minWidth: 130 },
-];
+  { field: "Member Sequence", minWidth: 160, hide: true },
+  { field: "Payment Status Date", minWidth: 180, hide: true },
+  { field: "Received Date", minWidth: 140, hide: true },
+  { field: "Entry Date", minWidth: 130, hide: true },
+  { field: "Processed Date", minWidth: 150, hide: true },
+  { field: "Paid Date", minWidth: 120, hide: true },
+  { field: "Payment Status", minWidth: 150, hide: true },
+  { field: "Group Name", minWidth: 180, hide: true },
+  { field: "Group ID", minWidth: 120, hide: true },
+  { field: "Division Name", minWidth: 150, hide: true },
+  { field: "Division ID", minWidth: 130, hide: true },
+  { field: "Plan", minWidth: 180, hide: true },
+  { field: "Plan ID", minWidth: 120, hide: true },
+  { field: "Place of Service", minWidth: 200, hide: true },
+  { field: "Claim Type", minWidth: 140, hide: true },
+  { field: "Procedure Code", minWidth: 150, hide: true },
+  { field: "Member Gender", minWidth: 140, hide: true },
+  { field: "Provider ID", minWidth: 130, hide: true },
+] as const satisfies ColDef<DisplayRow>[];
+
+const ALL_COLUMNS = COL_DEFS.map((c) => c.field);
+const DEFAULT_VISIBLE = new Set(
+  COL_DEFS.filter((c) => !("hide" in c && c.hide)).map((c) => c.field),
+);
+
+function ColumnToggle({ gridRef }: { gridRef: RefObject<AgGridReact<DisplayRow> | null> }) {
+  const [visible, setVisible] = useState<string[]>(() => [...DEFAULT_VISIBLE]);
+
+  function handleChange(next: string[]) {
+    setVisible(next);
+    const api = gridRef.current?.api;
+    if (!api) return;
+    const nextSet = new Set(next);
+    for (const col of ALL_COLUMNS) {
+      api.setColumnsVisible([col], nextSet.has(col));
+    }
+  }
+
+  return (
+    <Popover position="bottom-end" shadow="md" width={260}>
+      <Popover.Target>
+        <Button variant="default" size="xs" leftSection={<IconColumns size={14} />}>
+          Columns ({visible.length}/{ALL_COLUMNS.length})
+        </Button>
+      </Popover.Target>
+      <Popover.Dropdown p="xs">
+        <ScrollArea.Autosize mah={320}>
+          <Checkbox.Group value={visible} onChange={handleChange}>
+            <Stack gap={6} p={4}>
+              {ALL_COLUMNS.map((col) => (
+                <Checkbox key={col} value={col} label={col} size="sm" />
+              ))}
+            </Stack>
+          </Checkbox.Group>
+        </ScrollArea.Autosize>
+      </Popover.Dropdown>
+    </Popover>
+  );
+}
 
 function getRowId(params: GetRowIdParams<DisplayRow>) {
   return params.data.id;
@@ -271,9 +325,12 @@ const UploadPage = observer(() => {
                   </Badge>
                 )}
               </Group>
-              <Button type="submit" leftSection={<IconCircleCheck size={16} />} disabled={selectedCount === 0 || store.isSubmitting} loading={store.isSubmitting}>
-                Approve {selectedCount > 0 ? `(${selectedCount})` : ""}
-              </Button>
+              <Group gap="xs">
+                <ColumnToggle gridRef={gridRef} />
+                <Button type="submit" leftSection={<IconCircleCheck size={16} />} disabled={selectedCount === 0 || store.isSubmitting} loading={store.isSubmitting}>
+                  Approve {selectedCount > 0 ? `(${selectedCount})` : ""}
+                </Button>
+              </Group>
             </Group>
 
             <Box style={{ height: 520 }}>
