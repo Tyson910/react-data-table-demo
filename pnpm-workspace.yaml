@@ -1,0 +1,10 @@
+packages:
+  - backend
+  - frontend
+
+catalog:
+  typescript: ^5.5.3
+  zod: ~4.4.3
+
+onlyBuiltDependencies:
+  - esbuild

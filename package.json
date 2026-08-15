@@ -1,5 +1,17 @@
 {
-  "dependencies": {
-    "prettier": "^3.3.3"
+  "name": "mano-benefits-mrf",
+  "private": true,
+  "scripts": {
+    "dev:backend": "pnpm --filter ./backend dev",
+    "dev:frontend": "pnpm --filter ./frontend dev",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "oxlint && pnpm fmt:check",
+    "lint:fix": "oxlint --fix"
+  },
+  "devDependencies": {
+    "oxlint": "1.78.0",
+    "prettier": "^3.9.6"
   }
 }

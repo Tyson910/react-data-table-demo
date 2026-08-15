@@ -1,0 +1,49 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "options": {
+    "typeAware": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import"],
+  "ignorePatterns": [
+    "node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/*.min.*"
+  ],
+  "rules": {
+    "no-implicit-coercion": ["error", { "boolean": true, "number": false, "string": false }],
+    "max-params": ["error", { "max": 3 }],
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-expect-error": true,
+        "ts-ignore": true,
+        "ts-nocheck": true,
+        "ts-check": false
+      }
+    ],
+    "typescript/consistent-type-imports": [
+      "error",
+      { "prefer": "type-imports", "fixStyle": "separate-type-imports" }
+    ],
+    "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
+    "typescript/no-explicit-any": [
+      "error",
+      { "fixToUnknown": true, "ignoreRestArgs": true }
+    ],
+    "typescript/no-inferrable-types": "error",
+    "typescript/no-deprecated": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-unsafe-assignment": "error",
+    "typescript/no-unsafe-return": "error",
+    "typescript/no-unsafe-call": "error",
+    "typescript/no-unsafe-member-access": "error",
+    "typescript/no-unsafe-argument": "error",
+    "typescript/require-await": "error",
+    "typescript/no-unnecessary-condition": "error",
+    "typescript/no-unnecessary-type-assertion": "error",
+    "typescript/prefer-as-const": "error",
+    "typescript/switch-exhaustiveness-check": "error"
+  }
+}

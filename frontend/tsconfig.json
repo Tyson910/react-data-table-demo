@@ -4,30 +4,30 @@
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
-    "allowJs": true,
-
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "esModuleInterop": true,
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-
-    /* Linting */
+    "skipLibCheck": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "useUnknownInCatchVariables": true,
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "allowArbitraryExtensions": true,
+    "noUncheckedIndexedAccess": true,
 
     /* Paths */
     "baseUrl": ".",
     "paths": {
-      "~/*": ["src/*"],
-      "@shared/*": ["../shared/src/*"],
-      "@rules/*": ["../rules/src/*"]
+      "~/*": ["src/*"]
     }
   },
   "include": ["src", "vite.config.ts"]
