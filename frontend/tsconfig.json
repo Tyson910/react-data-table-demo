@@ -22,13 +22,7 @@
     "verbatimModuleSyntax": true,
     "esModuleInterop": true,
     "allowArbitraryExtensions": true,
-    "noUncheckedIndexedAccess": true,
-
-    /* Paths */
-    "baseUrl": ".",
-    "paths": {
-      "~/*": ["src/*"]
-    }
+    "noUncheckedIndexedAccess": true
   },
   "include": ["src", "vite.config.ts"]
 }

@@ -1,9 +1,10 @@
 packages:
   - backend
   - frontend
+  - validators
 
 catalog:
-  typescript: ^5.5.3
+  typescript: ^7.0.2
   zod: ~4.4.3
 
 onlyBuiltDependencies:
