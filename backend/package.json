@@ -7,7 +7,10 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.2",
-    "hono": "^4.6.6"
+    "@hono/standard-validator": "^0.4.0",
+    "@mano/validators": "workspace:*",
+    "hono": "^4.6.6",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
