@@ -1,5 +1,14 @@
 import type { FormEvent, RefObject } from "react";
-import type { ColDef, GetRowIdParams, IRowNode, RowDataUpdatedEvent, RowSelectionOptions, SelectionChangedEvent } from "ag-grid-community";
+import type {
+  CellValueChangedEvent,
+  ColDef,
+  GetRowIdParams,
+  IRowNode,
+  RowDataUpdatedEvent,
+  RowSelectionOptions,
+  SelectionChangedEvent,
+  ValueFormatterParams,
+} from "ag-grid-community";
 
 import { useRef, useState } from "react";
 import { observer } from "mobx-react-lite";
@@ -9,7 +18,7 @@ import { Dropzone } from "@mantine/dropzone";
 import { Alert, Badge, Box, Button, Checkbox, Group, Popover, ScrollArea, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
 import { store } from "../../stores/store.ts";
 import type { DisplayRow } from "../../stores/store.ts";
-import type { ValidClaim } from "../../utils/claims.schema.ts";
+import { type ValidClaim, claimSchema } from "../../utils/claims.schema.ts";
 import { IconAlertTriangle, IconArrowRight, IconCheck, IconCircleCheck, IconCloudUpload, IconColumns, IconFile, IconX } from "../../components/Icons.tsx";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -24,21 +33,39 @@ const ROW_SELECTION: RowSelectionOptions<DisplayRow> = {
   isRowSelectable: (node: IRowNode<DisplayRow>) => node.data?.isValid ?? false,
 };
 
-const COL_DEFS = [
-  { field: "Claim ID", minWidth: 160, pinned: "left" },
+const moneyFormatter = (p: ValueFormatterParams): string => {
+  const v: unknown = p.value;
+  if (typeof v !== "string" || !v) return "";
+  return `$${parseFloat(v).toFixed(2)}`;
+};
+
+const dateFormatter = (p: ValueFormatterParams): string => {
+  const v: unknown = p.value;
+  if (typeof v !== "string" || !v) return "";
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? v : d.toLocaleDateString();
+};
+
+const COL_DEFS: ColDef<DisplayRow>[] = [
+  { field: "Claim ID", minWidth: 160, pinned: "left", editable: false },
   { field: "Subscriber ID", minWidth: 140 },
-  { field: "Claim Status", minWidth: 130 },
-  { field: "Billed", minWidth: 110 },
-  { field: "Allowed", minWidth: 110 },
-  { field: "Paid", minWidth: 110 },
+  {
+    field: "Claim Status",
+    minWidth: 130,
+    cellEditor: "agSelectCellEditor",
+    cellEditorParams: { values: claimSchema.shape["Claim Status"].options },
+  },
+  { field: "Billed", minWidth: 110, valueFormatter: moneyFormatter },
+  { field: "Allowed", minWidth: 110, valueFormatter: moneyFormatter },
+  { field: "Paid", minWidth: 110, valueFormatter: moneyFormatter },
   { field: "Provider Name", minWidth: 180, flex: 1 },
-  { field: "Service Date", minWidth: 130 },
+  { field: "Service Date", minWidth: 130, valueFormatter: dateFormatter },
   { field: "Member Sequence", minWidth: 160, hide: true },
-  { field: "Payment Status Date", minWidth: 180, hide: true },
-  { field: "Received Date", minWidth: 140, hide: true },
-  { field: "Entry Date", minWidth: 130, hide: true },
-  { field: "Processed Date", minWidth: 150, hide: true },
-  { field: "Paid Date", minWidth: 120, hide: true },
+  { field: "Payment Status Date", minWidth: 180, hide: true, valueFormatter: dateFormatter },
+  { field: "Received Date", minWidth: 140, hide: true, valueFormatter: dateFormatter },
+  { field: "Entry Date", minWidth: 130, hide: true, valueFormatter: dateFormatter },
+  { field: "Processed Date", minWidth: 150, hide: true, valueFormatter: dateFormatter },
+  { field: "Paid Date", minWidth: 120, hide: true, valueFormatter: dateFormatter },
   { field: "Payment Status", minWidth: 150, hide: true },
   { field: "Group Name", minWidth: 180, hide: true },
   { field: "Group ID", minWidth: 120, hide: true },
@@ -46,17 +73,33 @@ const COL_DEFS = [
   { field: "Division ID", minWidth: 130, hide: true },
   { field: "Plan", minWidth: 180, hide: true },
   { field: "Plan ID", minWidth: 120, hide: true },
-  { field: "Place of Service", minWidth: 200, hide: true },
-  { field: "Claim Type", minWidth: 140, hide: true },
+  {
+    field: "Place of Service",
+    minWidth: 200,
+    hide: true,
+    cellEditor: "agSelectCellEditor",
+    cellEditorParams: { values: claimSchema.shape["Place of Service"].options },
+  },
+  {
+    field: "Claim Type",
+    minWidth: 140,
+    hide: true,
+    cellEditor: "agSelectCellEditor",
+    cellEditorParams: { values: claimSchema.shape["Claim Type"].options },
+  },
   { field: "Procedure Code", minWidth: 150, hide: true },
-  { field: "Member Gender", minWidth: 140, hide: true },
+  {
+    field: "Member Gender",
+    minWidth: 140,
+    hide: true,
+    cellEditor: "agSelectCellEditor",
+    cellEditorParams: { values: claimSchema.shape["Member Gender"].options },
+  },
   { field: "Provider ID", minWidth: 130, hide: true },
-] as const satisfies ColDef<DisplayRow>[];
+];
 
-const ALL_COLUMNS = COL_DEFS.map((c) => c.field);
-const DEFAULT_VISIBLE = new Set(
-  COL_DEFS.filter((c) => !("hide" in c && c.hide)).map((c) => c.field),
-);
+const ALL_COLUMNS: string[] = COL_DEFS.flatMap((c) => (c.field != null ? [c.field] : []));
+const DEFAULT_VISIBLE: Set<string> = new Set(COL_DEFS.filter((c) => !c.hide).flatMap((c) => (c.field != null ? [c.field] : [])));
 
 function ColumnToggle({ gridRef }: { gridRef: RefObject<AgGridReact<DisplayRow> | null> }) {
   const [visible, setVisible] = useState<string[]>(() => [...DEFAULT_VISIBLE]);
@@ -65,10 +108,9 @@ function ColumnToggle({ gridRef }: { gridRef: RefObject<AgGridReact<DisplayRow> 
     setVisible(next);
     const api = gridRef.current?.api;
     if (!api) return;
-    const nextSet = new Set(next);
-    for (const col of ALL_COLUMNS) {
-      api.setColumnsVisible([col], nextSet.has(col));
-    }
+    api.applyColumnState({
+      state: ALL_COLUMNS.map((col) => ({ colId: col, hide: !next.includes(col) })),
+    });
   }
 
   return (
@@ -157,13 +199,18 @@ const UploadPage = observer(() => {
     setSelectedCount(event.api.getSelectedRows().length);
   }
 
+  function onCellValueChanged(event: CellValueChangedEvent<DisplayRow>) {
+    if (!event.colDef.field || event.colDef.field === "Claim ID") return;
+    store.updateRow(event.data.id, event.colDef.field, String(event.newValue ?? ""));
+  }
+
   const handleApprove = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!gridRef.current || selectedCount === 0) return;
 
     const selected = gridRef.current.api.getSelectedRows();
-    const selectedIds = new Set(selected.map((r) => r["Claim ID"]));
-    const claims = store.validClaims.filter((c) => selectedIds.has(c["Claim ID"])) satisfies ValidClaim[];
+    const selectedRowIds = new Set(selected.map((r) => r.id));
+    const claims = store.allRows.filter((r) => selectedRowIds.has(r.id) && r.isValid && r.validData).map((r) => r.validData!) satisfies ValidClaim[];
 
     void store.submitApproval(claims);
   };
@@ -344,7 +391,8 @@ const UploadPage = observer(() => {
                 getRowStyle={getRowStyle}
                 onRowDataUpdated={onRowDataUpdated}
                 onSelectionChanged={onSelectionChanged}
-                defaultColDef={{ sortable: true, resizable: true, filter: true }}
+                defaultColDef={{ sortable: true, resizable: true, filter: true, editable: true }}
+                onCellValueChanged={onCellValueChanged}
               />
             </Box>
           </Stack>

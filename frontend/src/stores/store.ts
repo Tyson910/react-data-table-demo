@@ -3,7 +3,16 @@ import Papa from "papaparse";
 import { claimSchema } from "../utils/claims.schema.ts";
 import type { ValidClaim, ValidationError } from "../utils/claims.schema.ts";
 
-type CsvRow = Record<keyof ValidClaim, string> & Record<string, string>;
+type CsvRow = Record<string, string>;
+
+type RowRecord = {
+  id: string;
+  rowIndex: number;
+  raw: CsvRow;
+  isValid: boolean;
+  validData: ValidClaim | null;
+  errors: ValidationError[];
+};
 
 export type InvalidRow = {
   rowIndex: number;
@@ -43,11 +52,67 @@ export type DisplayRow = {
   errors: ValidationError[];
 };
 
+function toDisplayRow(record: RowRecord): DisplayRow {
+  const r = record.raw;
+  const c = record.validData;
+  return {
+    id: record.id,
+    "Claim ID": r["Claim ID"] ?? "",
+    "Subscriber ID": r["Subscriber ID"] ?? "",
+    "Member Sequence": r["Member Sequence"] ?? "",
+    "Claim Status": r["Claim Status"] ?? "",
+    // Store raw number strings — valueFormatter in the grid adds $ for display
+    Billed: c ? String(c.Billed) : (r["Billed"] ?? ""),
+    Allowed: c ? String(c.Allowed) : (r["Allowed"] ?? ""),
+    Paid: c ? String(c.Paid) : (r["Paid"] ?? ""),
+    // Store ISO date strings — valueFormatter in the grid localises for display
+    "Payment Status Date": c ? toISODate(c["Payment Status Date"]) : (r["Payment Status Date"] ?? ""),
+    "Service Date": c ? toISODate(c["Service Date"]) : (r["Service Date"] ?? ""),
+    "Received Date": c ? toISODate(c["Received Date"]) : (r["Received Date"] ?? ""),
+    "Entry Date": c ? toISODate(c["Entry Date"]) : (r["Entry Date"] ?? ""),
+    "Processed Date": c ? toISODate(c["Processed Date"]) : (r["Processed Date"] ?? ""),
+    "Paid Date": c ? toISODate(c["Paid Date"]) : (r["Paid Date"] ?? ""),
+    "Payment Status": r["Payment Status"] ?? "",
+    "Group Name": r["Group Name"] ?? "",
+    "Group ID": r["Group ID"] ?? "",
+    "Division Name": r["Division Name"] ?? "",
+    "Division ID": r["Division ID"] ?? "",
+    Plan: r["Plan"] ?? "",
+    "Plan ID": r["Plan ID"] ?? "",
+    "Place of Service": r["Place of Service"] ?? "",
+    "Claim Type": r["Claim Type"] ?? "",
+    "Procedure Code": r["Procedure Code"] ?? "",
+    "Member Gender": r["Member Gender"] ?? "",
+    "Provider ID": r["Provider ID"] ?? "",
+    "Provider Name": r["Provider Name"] ?? "",
+    isValid: record.isValid,
+    errors: record.errors,
+  };
+}
+
+function toISODate(date: Date): string {
+  return date.toISOString().split("T")[0] ?? "";
+}
+
+function parseErrors(error: { issues: Array<{ path: PropertyKey[]; message: string }> }): ValidationError[] {
+  return error.issues.map((issue) => ({
+    field: String(issue.path.at(0) ?? "unknown"),
+    message: issue.message,
+  }));
+}
+
+function validateRow(raw: CsvRow): Pick<RowRecord, "isValid" | "validData" | "errors"> {
+  const result = claimSchema.safeParse(raw);
+  if (result.success) {
+    return { isValid: true, validData: result.data, errors: [] };
+  }
+  return { isValid: false, validData: null, errors: parseErrors(result.error) };
+}
+
 class AppStore {
   fileName = "";
   fileError: string | null = null;
-  validClaims: ValidClaim[] = [];
-  invalidRows: InvalidRow[] = [];
+  allRows: RowRecord[] = [];
   showErrors = true;
   isSubmitting = false;
   submitSuccess = false;
@@ -57,82 +122,25 @@ class AppStore {
   }
 
   get hasData() {
-    return this.validClaims.length > 0 || this.invalidRows.length > 0;
+    return this.allRows.length > 0;
+  }
+
+  get validClaims(): ValidClaim[] {
+    return this.allRows.filter((r) => r.isValid && r.validData).map((r) => r.validData!);
+  }
+
+  get invalidRows(): InvalidRow[] {
+    return this.allRows.filter((r) => !r.isValid).map((r) => ({ rowIndex: r.rowIndex, raw: r.raw, errors: r.errors }));
   }
 
   get displayRows(): DisplayRow[] {
-    const valid: DisplayRow[] = this.validClaims.map((claim) => ({
-      id: claim["Claim ID"],
-      "Claim ID": claim["Claim ID"],
-      "Subscriber ID": claim["Subscriber ID"],
-      "Member Sequence": String(claim["Member Sequence"]),
-      "Claim Status": claim["Claim Status"],
-      Billed: `$${claim["Billed"].toFixed(2)}`,
-      Allowed: `$${claim["Allowed"].toFixed(2)}`,
-      Paid: `$${claim["Paid"].toFixed(2)}`,
-      "Payment Status Date": claim["Payment Status Date"].toLocaleDateString(),
-      "Service Date": claim["Service Date"].toLocaleDateString(),
-      "Received Date": claim["Received Date"].toLocaleDateString(),
-      "Entry Date": claim["Entry Date"].toLocaleDateString(),
-      "Processed Date": claim["Processed Date"].toLocaleDateString(),
-      "Paid Date": claim["Paid Date"].toLocaleDateString(),
-      "Payment Status": claim["Payment Status"],
-      "Group Name": claim["Group Name"],
-      "Group ID": claim["Group ID"],
-      "Division Name": claim["Division Name"],
-      "Division ID": claim["Division ID"],
-      Plan: claim["Plan"],
-      "Plan ID": claim["Plan ID"],
-      "Place of Service": claim["Place of Service"],
-      "Claim Type": claim["Claim Type"],
-      "Procedure Code": claim["Procedure Code"],
-      "Member Gender": claim["Member Gender"],
-      "Provider ID": claim["Provider ID"],
-      "Provider Name": claim["Provider Name"],
-      isValid: true,
-      errors: [],
-    }));
-
-    const invalid: DisplayRow[] = this.invalidRows.map((row) => ({
-      id: `invalid-${row.rowIndex}`,
-      "Claim ID": row.raw["Claim ID"],
-      "Subscriber ID": row.raw["Subscriber ID"],
-      "Member Sequence": row.raw["Member Sequence"],
-      "Claim Status": row.raw["Claim Status"],
-      Billed: row.raw["Billed"],
-      Allowed: row.raw["Allowed"],
-      Paid: row.raw["Paid"],
-      "Payment Status Date": row.raw["Payment Status Date"],
-      "Service Date": row.raw["Service Date"],
-      "Received Date": row.raw["Received Date"],
-      "Entry Date": row.raw["Entry Date"],
-      "Processed Date": row.raw["Processed Date"],
-      "Paid Date": row.raw["Paid Date"],
-      "Payment Status": row.raw["Payment Status"],
-      "Group Name": row.raw["Group Name"],
-      "Group ID": row.raw["Group ID"],
-      "Division Name": row.raw["Division Name"],
-      "Division ID": row.raw["Division ID"],
-      Plan: row.raw["Plan"],
-      "Plan ID": row.raw["Plan ID"],
-      "Place of Service": row.raw["Place of Service"],
-      "Claim Type": row.raw["Claim Type"],
-      "Procedure Code": row.raw["Procedure Code"],
-      "Member Gender": row.raw["Member Gender"],
-      "Provider ID": row.raw["Provider ID"],
-      "Provider Name": row.raw["Provider Name"],
-      isValid: false,
-      errors: row.errors,
-    }));
-
-    return [...valid, ...invalid];
+    return this.allRows.map(toDisplayRow);
   }
 
   parseFile = (file: File): void => {
     this.fileName = file.name;
     this.fileError = null;
-    this.validClaims = [];
-    this.invalidRows = [];
+    this.allRows = [];
     this.showErrors = true;
     this.submitSuccess = false;
 
@@ -141,21 +149,29 @@ class AppStore {
       skipEmptyLines: true,
       complete: (results) => {
         runInAction(() => {
-          results.data.forEach((row, index) => {
-            const result = claimSchema.safeParse(row);
-            if (result.success) {
-              this.validClaims.push(result.data);
-            } else {
-              const errors: ValidationError[] = result.error.issues.map((issue) => ({
-                field: String(issue.path.at(0) ?? "unknown"),
-                message: issue.message,
-              }));
-              this.invalidRows.push({ rowIndex: index + 2, raw: row, errors });
-            }
-          });
+          this.allRows = results.data.map((raw, index) => ({
+            id: `row-${index}`,
+            rowIndex: index + 2,
+            raw,
+            ...validateRow(raw),
+          }));
         });
       },
     });
+  };
+
+  updateRow = (id: string, field: string, value: string): void => {
+    const index = this.allRows.findIndex((r) => r.id === id);
+    if (index === -1) return;
+    const existing = this.allRows[index];
+    if (!existing) return;
+    const newRaw = { ...existing.raw, [field]: value };
+    this.allRows[index] = {
+      id: existing.id,
+      rowIndex: existing.rowIndex,
+      raw: newRaw,
+      ...validateRow(newRaw),
+    };
   };
 
   dismissErrors = (): void => {
@@ -165,8 +181,7 @@ class AppStore {
   clearFile = (): void => {
     this.fileName = "";
     this.fileError = null;
-    this.validClaims = [];
-    this.invalidRows = [];
+    this.allRows = [];
     this.showErrors = true;
     this.submitSuccess = false;
   };
