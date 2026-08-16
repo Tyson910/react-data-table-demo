@@ -7,6 +7,7 @@
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check .",
     "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter backend test",
     "lint": "oxlint --config oxlint.json . && pnpm fmt:check",
     "lint:fix": "oxlint --config oxlint.json --fix ."
   },
