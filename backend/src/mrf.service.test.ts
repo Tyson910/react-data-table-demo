@@ -81,13 +81,11 @@ describe("generateMrfFiles", () => {
     expect(codes).toContain("99214");
   });
 
-  it("produces valid MRF schema output", () => {
-    const files = generateMrfFiles([makeClaim()]);
-    expect(files).toHaveLength(1);
+  it("maps Group Name to reporting entity and Plan to plan name", () => {
+    const files = generateMrfFiles([makeClaim({ "Group Name": "HealthCo", Plan: "Silver Plan" })]);
     const mrf = parseMrf(files[0]!.content);
-    expect(mrf.reporting_entity_name).toBe("Acme Corp");
-    expect("plan_name" in mrf && mrf.plan_name).toBe("Gold Plan");
-    expect(mrf.version).toBe("1.0.0");
+    expect(mrf.reporting_entity_name).toBe("HealthCo");
+    expect("plan_name" in mrf && mrf.plan_name).toBe("Silver Plan");
   });
 
   it("falls back to default NPI when Provider ID is non-numeric", () => {

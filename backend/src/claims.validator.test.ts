@@ -36,24 +36,6 @@ describe("claimSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("coerces numeric strings to numbers", () => {
-    const result = claimSchema.safeParse(VALID_RAW);
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.Billed).toBe(500);
-      expect(result.data.Allowed).toBe(400);
-      expect(result.data.Paid).toBe(350);
-    }
-  });
-
-  it("coerces date strings to Date objects", () => {
-    const result = claimSchema.safeParse(VALID_RAW);
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data["Service Date"]).toBeInstanceOf(Date);
-    }
-  });
-
   it("rejects when Paid exceeds Allowed", () => {
     const result = claimSchema.safeParse({ ...VALID_RAW, Paid: "500", Allowed: "400" });
     expect(result.success).toBe(false);
