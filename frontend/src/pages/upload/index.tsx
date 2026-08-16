@@ -19,7 +19,7 @@ import { AllCommunityModule, ModuleRegistry, themeQuartz } from "ag-grid-communi
 import { Dropzone } from "@mantine/dropzone";
 import { Alert, Badge, Box, Button, Checkbox, Group, Menu, Modal, Popover, ScrollArea, Stack, Text, ThemeIcon, Title, Tooltip, UnstyledButton } from "@mantine/core";
 import { store } from "../../stores/store.ts";
-import { type ValidClaim, claimSchema } from "../../utils/claims.schema.ts";
+import { claimSchema, type ValidClaim } from "@mano/validators";
 import {
   IconAlertTriangle,
   IconArrowRight,
@@ -223,7 +223,7 @@ const ValidationErrorsAlert = observer(({ gridRef }: { gridRef: RefObject<AgGrid
   const summary = Object.entries(byField)
     .map(([field, lines]) => ({ field, count: lines.size }))
     .sort((a, b) => b.count - a.count);
-    
+
   const shown = expanded ? rows : rows.slice(0, ERROR_PREVIEW_COUNT);
 
   return (
@@ -463,6 +463,13 @@ const UploadPage = observer(() => {
       {store.submitSuccess && (
         <Alert color="green" title="Submitted successfully" icon={<IconCircleCheck size={18} />}>
           {selectedCount} claim{selectedCount !== 1 ? "s" : ""} sent for MRF generation.
+        </Alert>
+      )}
+
+      {/* Submission error */}
+      {store.submitError && (
+        <Alert color="red" title="Submission failed" icon={<IconAlertTriangle size={18} />} withCloseButton onClose={store.clearSubmitError}>
+          {store.submitError}
         </Alert>
       )}
 

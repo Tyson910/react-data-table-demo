@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import { authRoutes, verifySession } from "./auth.js";
+import { mrfRoutes } from "./mrf.js";
 
 export const app = new Hono()
   .route("/api/auth", authRoutes)
@@ -12,6 +13,6 @@ export const app = new Hono()
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
     await next();
   })
-  .get("/", (c) => c.text("Hello Hono!"));
+  .route("/api/mrf", mrfRoutes);
 
 export type AppType = typeof app;

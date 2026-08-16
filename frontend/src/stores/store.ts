@@ -2,13 +2,17 @@ import { makeAutoObservable, runInAction } from "mobx";
 import { parseResponse, DetailedError } from "hono/client";
 import Papa from "papaparse";
 
-import { claimSchema } from "../utils/claims.schema.ts";
-import type { ValidClaim, ValidationError } from "../utils/claims.schema.ts";
+import { claimSchema, type ValidClaim } from "@mano/validators";
 import { rpc } from "../lib/api.ts";
 
 export type AuthUser = { id: number; name: string; email: string };
 
 type CsvRow = Record<string, string>;
+
+type ValidationError = {
+  field: string;
+  message: string;
+};
 
 type RowRecord = {
   id: string;
@@ -122,6 +126,7 @@ class AppStore {
   showErrors = true;
   isSubmitting = false;
   submitSuccess = false;
+  submitError: string | null = null;
 
   currentUser: AuthUser | null = null;
   availableUsers: AuthUser[] = [];
@@ -186,7 +191,7 @@ class AppStore {
     this.fileError = null;
     this.allRows = [];
     this.showErrors = true;
-    this.submitSuccess = false;
+    this.resetSubmission();
 
     Papa.parse<CsvRow>(file, {
       header: true,
@@ -236,7 +241,16 @@ class AppStore {
     this.fileError = null;
     this.allRows = [];
     this.showErrors = true;
+    this.resetSubmission();
+  };
+
+  resetSubmission = (): void => {
     this.submitSuccess = false;
+    this.submitError = null;
+  };
+
+  clearSubmitError = (): void => {
+    this.submitError = null;
   };
 
   setFileError = (message: string): void => {
@@ -246,24 +260,18 @@ class AppStore {
 
   submitApproval = async (claims: ValidClaim[]): Promise<void> => {
     this.isSubmitting = true;
+    this.resetSubmission();
     try {
-      await fetch("/api/mrf/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(claims),
-      });
-      runInAction(() => {
-        this.submitSuccess = true;
-      });
+      const res = await rpc.api.mrf.generate.$post({ json: claims });
+      if (!res.ok) {
+        this.submitError = `Request failed (${res.status})`;
+        return;
+      }
+      this.submitSuccess = true;
     } catch {
-      // backend not yet implemented — surface success so UI flow is demonstrable
-      runInAction(() => {
-        this.submitSuccess = true;
-      });
+      this.submitError = "Network error — could not reach the server.";
     } finally {
-      runInAction(() => {
-        this.isSubmitting = false;
-      });
+      this.isSubmitting = false;
     }
   };
 }

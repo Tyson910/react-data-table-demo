@@ -1,10 +1,5 @@
 import * as z from "zod";
-import { nonEmptyString } from "@mano/validators";
-
-export type ValidationError = {
-  field: string;
-  message: string;
-};
+import { nonEmptyString } from "./primitives.validator.js";
 
 export const claimSchema = z
   .object({
@@ -36,12 +31,8 @@ export const claimSchema = z
     "Provider Name": nonEmptyString,
   })
   .superRefine((data, ctx) => {
-    if (data.Paid > data.Allowed) {
-      ctx.addIssue({ code: "custom", path: ["Paid"], message: "Paid must not exceed Allowed", input: data });
-    }
-    if (data.Allowed > data.Billed) {
-      ctx.addIssue({ code: "custom", path: ["Allowed"], message: "Allowed must not exceed Billed", input: data });
-    }
+    if (data.Paid > data.Allowed) ctx.addIssue({ code: "custom", path: ["Paid"], message: "Paid must not exceed Allowed", input: data });
+    if (data.Allowed > data.Billed) ctx.addIssue({ code: "custom", path: ["Allowed"], message: "Allowed must not exceed Billed", input: data });
 
     const dates = [
       ["Service Date", data["Service Date"]],
@@ -53,9 +44,7 @@ export const claimSchema = z
     ] as const satisfies [string, Date][];
     dates.slice(1).forEach(([currName, curr], i) => {
       const [prevName, prev] = dates[i]!;
-      if (curr < prev) {
-        ctx.addIssue({ code: "custom", path: [currName], message: `${currName} must not be before ${prevName}`, input: data });
-      }
+      if (curr < prev) ctx.addIssue({ code: "custom", path: [currName], message: `${currName} must not be before ${prevName}`, input: data });
     });
   });
 
