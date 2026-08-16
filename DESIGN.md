@@ -19,7 +19,7 @@ The application uses one MobX `AppStore` (`frontend/src/stores/store.ts`), as re
 
 - **Authentication:** current user, available users, login, logout, and session initialization.
 - **CSV draft:** selected file metadata, parsed rows, row edits, row removal, validation visibility, and derived row collections.
-- **Submission:** request progress, success state, and user-facing submission errors.
+- **Async operations:** claim approval submission and MRF file preview fetching. Each uses a status-discriminated union (e.g. `idle | submitting | success | error`) rather than independent boolean/nullable fields, because these lifecycles have mutually exclusive phases — a request cannot be simultaneously loading and succeeded — and independent fields would let the type system represent those impossible combinations.
 
 The CSV draft is client-owned working state. The store keeps the original row data and validation results together so edits can immediately re-run validation. Computed getters expose `validClaims`, `invalidRows`, and `displayRows` without duplicating derived state.
 
@@ -33,13 +33,13 @@ For this challenge, MobX is intentionally used for both client and asynchronous 
 
 ## API Interaction
 
-The frontend uses the typed Hono RPC client in `frontend/src/services/api.ts` to call the backend. Authentication uses the `/api/auth` endpoints (`backend/src/auth.routes.ts`). Approved claims are sent to the MRF generation endpoint (`backend/src/mrf.routes.ts`), and the backend repository keeps generated JSON files on disk.
+The frontend uses the typed Hono RPC client (`frontend/src/services/api.ts`) rather than raw fetch, because Hono's `hc` client infers request and response types directly from the backend route definitions — this gives end-to-end type safety without a separate API schema or codegen step.
 
-The backend persists generated files through a repository abstraction; the pattern and its responsibilities are described below.
+Authentication uses the `/api/auth` endpoints (`backend/src/auth.routes.ts`). Approved claims are sent to the MRF generation endpoint (`backend/src/mrf.routes.ts`), and the backend repository keeps generated JSON files on disk. The repository abstraction and its responsibilities are described below.
 
 ## Design Patterns
 
-The MRF generation workflow uses the Strategy pattern to separate billing-class-specific rules. `ProfessionalAllowedAmountStrategy` handles professional claims and service codes, while `InstitutionalAllowedAmountStrategy` handles institutional claims (both in `backend/src/mrf.service.ts`). The strategy registry selects the implementation from the claim type.
+The MRF generation workflow uses the Strategy pattern to separate billing-class-specific rules (`backend/src/mrf.service.ts`). `ProfessionalAllowedAmountStrategy` handles professional claims and service codes, while `InstitutionalAllowedAmountStrategy` handles institutional claims. Each strategy maps to one branch of the `AllowedAmountSchema` discriminated union in the validators, so the type system enforces that every billing class produces a structurally valid output. A conditional inside `buildAllowedAmount` would achieve the same branching, but the strategy boundary makes it explicit that the two billing classes have different required fields (`service_code` is required for professional, optional for institutional).
 
 The backend uses the Repository pattern through `MrfFileRepository` (`backend/src/mrf.repository.ts`). `LocalMrfFileRepository` owns filesystem persistence, keeping disk-specific operations out of the routes and generation logic. This allows an in-memory repository for tests or a `RemoteFileRepository` implementation backed by object storage or another remote service later:
 
@@ -65,7 +65,7 @@ class RemoteFileRepository implements MrfFileRepository {
 
 The routes would continue calling `save` and `list` without needing to know whether files are stored locally or remotely.
 
-`backend/src/mrf.service.ts` acts as a Service Layer. It coordinates claim grouping, averaging, strategy selection, and final MRF schema validation without depending on HTTP or storage concerns. The route layer remains responsible for request validation, service invocation, and persistence.
+`backend/src/mrf.service.ts` acts as a Service Layer. It coordinates claim grouping, averaging, strategy selection, and final MRF schema validation without depending on HTTP or storage concerns, so the generation logic is unit-testable without a running server and reusable if a second entry point (e.g. a CLI or batch job) is added. The route layer remains responsible for request validation, service invocation, and persistence.
 
 ## Routing
 
@@ -80,12 +80,10 @@ React Router provides the following frontend routes (`frontend/src/routes.tsx`):
 
 ## Component Responsibilities
 
-- `BasicLayout` (`frontend/src/layout/BasicLayout.tsx`) renders shared navigation and the current-user affordance.
-- `LoginPage` (`frontend/src/pages/login/index.tsx`) handles user selection and login interaction.
-- `UploadPage` (`frontend/src/pages/upload/index.tsx`) coordinates file upload, grid editing, validation feedback, row removal, and approval.
-- `AppStore` (`frontend/src/stores/store.ts`) owns observable state and actions shared by these components.
-- `MrfFilesPage` (`frontend/src/pages/mrf/index.tsx`) is a standalone public page that fetches and displays generated MRF files with preview and download capabilities.
-- Validator utilities (`validators/src/claims.validator.ts`) and display-row transformations keep schema and presentation logic out of the React components where practical.
+- `UploadPage` (`frontend/src/pages/upload/index.tsx`) coordinates file upload, grid editing, validation feedback, row removal, and approval. It owns AG Grid integration and local UI state (selected row count, filter toggles); domain state lives in `AppStore`.
+- `AppStore` (`frontend/src/stores/store.ts`) owns all observable state and actions. Components read from the store and dispatch actions rather than holding domain state locally, so the grid, alerts, and navigation bar always reflect the same source of truth.
+- `MrfFilesPage` (`frontend/src/pages/mrf/index.tsx`) is a standalone public page that re-validates its loader data against a local Zod schema at the trust boundary, rather than assuming the backend response shape is correct.
+- Validator utilities (`validators/src/claims.validator.ts`) and display-row transformations live in a shared `validators` package so the same schema is used for both client-side validation during CSV editing and server-side request validation at the API boundary.
 
 ## Error Handling
 

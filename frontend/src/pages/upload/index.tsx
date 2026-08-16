@@ -61,6 +61,7 @@ const UploadPage = observer(() => {
   const navigate = useNavigate();
   const [selectedCount, setSelectedCount] = useState(0);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  // Ref mirrors state so AG Grid's doesExternalFilterPass reads current value without re-rendering the grid
   const [invalidOnly, setInvalidOnly] = useState(false);
   const invalidOnlyRef = useRef(false);
 
