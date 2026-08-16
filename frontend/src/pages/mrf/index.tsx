@@ -105,13 +105,13 @@ const PreviewModal = observer(() => {
 
   return (
     <Modal opened onClose={store.closeMrfPreview} title={preview.name} size="xl" centered>
-      {preview.loading && <Loader display="block" mx="auto" my="xl" />}
-      {preview.error !== null && (
+      {preview.status === "loading" && <Loader display="block" mx="auto" my="xl" />}
+      {preview.status === "error" && (
         <Text c="red" size="sm">
           {preview.error}
         </Text>
       )}
-      {preview.data !== null && (
+      {preview.status === "success" && (
         <Tabs defaultValue="summary">
           <Tabs.List>
             <Tabs.Tab value="summary">Summary</Tabs.Tab>
