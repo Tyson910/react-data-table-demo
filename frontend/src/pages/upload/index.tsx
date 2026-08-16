@@ -151,9 +151,8 @@ function getRowId(params: GetRowIdParams<DisplayRow>) {
   return params.data.id;
 }
 
-function getRowStyle(params: { data?: DisplayRow }) {
-  if (!params.data?.isValid) return { color: "#9ca3af", background: "#fafafa" };
-  return undefined;
+function getRowClass(params: { data?: DisplayRow }) {
+  return params.data?.isValid ? undefined : "bg-red-50 text-red-700 border-l-4 border-red-500";
 }
 
 const gridTheme = themeQuartz.withParams({
@@ -541,7 +540,7 @@ const UploadPage = observer(() => {
               columnDefs={COL_DEFS}
               getRowId={getRowId}
               rowSelection={ROW_SELECTION}
-              getRowStyle={getRowStyle}
+              getRowClass={getRowClass}
               isExternalFilterPresent={() => invalidOnlyRef.current && store.invalidRows.length > 0}
               doesExternalFilterPass={(node) => node.data?.isValid === false}
               onRowDataUpdated={onRowDataUpdated}
