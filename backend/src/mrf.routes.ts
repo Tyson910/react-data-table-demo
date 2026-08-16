@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { claimSchema } from "@mano/validators";
+import { AllowedAmountsFileSchema, claimSchema } from "@mano/validators";
 import * as z from "zod";
 
 import { authRequired } from "./auth.middleware.js";
@@ -20,6 +20,23 @@ export const mrfRoutes = new Hono()
     const files = await mrfFileRepository.list();
 
     return c.json({ files });
+  })
+  .get("/files/:name/preview", zValidator("param", z.object({ name: z.string().min(1, "File name is required") })), async (c) => {
+    const { name } = c.req.valid("param");
+    const file = await mrfFileRepository.get(name);
+    if (!file) return c.json({ error: "File not found" }, 404);
+
+    let raw: unknown;
+    try {
+      raw = JSON.parse(file.content);
+    } catch {
+      return c.json({ error: "File does not contain valid JSON" }, 422);
+    }
+
+    const result = AllowedAmountsFileSchema.safeParse(raw);
+    if (!result.success) return c.json({ error: "File does not match the MRF schema" }, 422);
+
+    return c.json(result.data);
   })
   .get("/files/:name", zValidator("param", z.object({ name: z.string().min(1, "File name is required") })), async (c) => {
     const { name } = c.req.valid("param");

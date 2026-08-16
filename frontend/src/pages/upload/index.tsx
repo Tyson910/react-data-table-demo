@@ -110,7 +110,7 @@ const UploadPage = observer(() => {
   };
 
   return (
-    <Stack p="xl" gap="lg" bg="gray.0" style={{ minHeight: "100vh" }}>
+    <Stack p="xl" gap="lg" bg="gray.0" className="min-h-screen">
       <Modal opened={authModalOpen} onClose={() => setAuthModalOpen(false)} title="Sign in required" centered size="sm">
         <Stack gap="md">
           <Text size="sm">You must be signed in to approve claims.</Text>
@@ -158,7 +158,7 @@ const UploadPage = observer(() => {
           loading={store.isSubmitting}
           radius="xl"
           p={hasFile ? "xs" : "xl"}
-          style={{ borderWidth: 2 }}
+          className="border-2"
         >
           {hasFile ? (
             <Group justify="space-between" wrap="nowrap" px="sm" py={4}>
@@ -189,7 +189,7 @@ const UploadPage = observer(() => {
               </Button>
             </Group>
           ) : (
-            <div className="flex min-h-[300px] items-center justify-center" style={{ pointerEvents: "none" }}>
+            <div className="pointer-events-none flex min-h-[300px] items-center justify-center">
               <Dropzone.Accept>
                 <Stack align="center" gap="md">
                   <ThemeIcon size={84} radius="xl" color="green">
@@ -234,7 +234,13 @@ const UploadPage = observer(() => {
       </div>
 
       {store.fileError && (
-        <Alert color="red" title="Invalid file" icon={<IconAlertTriangle size={18} />} withCloseButton onClose={() => store.clearFile()}>
+        <Alert
+          color={store.hasData ? "orange" : "red"}
+          title={store.hasData ? "CSV warning" : "Invalid file"}
+          icon={<IconAlertTriangle size={18} />}
+          withCloseButton
+          onClose={store.hasData ? store.clearFileError : store.clearFile}
+        >
           {store.fileError}
         </Alert>
       )}
@@ -254,7 +260,7 @@ const UploadPage = observer(() => {
       )}
 
       {store.hasData && (
-        <Stack gap="sm" style={{ flex: 1 }}>
+        <Stack gap="sm" className="flex-1">
           <Group justify="space-between" align="center">
             <Group gap="xs">
               <Badge size="lg" variant="light" color="green" leftSection={<IconCheck size={12} />}>
@@ -262,7 +268,7 @@ const UploadPage = observer(() => {
               </Badge>
               {store.invalidRows.length > 0 && (
                 <Tooltip label={store.showErrors ? "Hide error details" : "Show error details"}>
-                  <Badge size="lg" variant="light" color="orange" leftSection={<IconAlertTriangle size={12} />} style={{ cursor: "pointer" }} onClick={() => store.toggleErrors()}>
+                  <Badge size="lg" variant="light" color="orange" leftSection={<IconAlertTriangle size={12} />} className="cursor-pointer" onClick={() => store.toggleErrors()}>
                     {store.invalidRows.length} invalid — not selectable
                   </Badge>
                 </Tooltip>
@@ -300,7 +306,7 @@ const UploadPage = observer(() => {
             </Group>
           </Group>
 
-          <Box style={{ height: 520 }}>
+          <Box className="h-[520px]">
             <AgGridReact<DisplayRow>
               ref={gridRef}
               theme={gridTheme}

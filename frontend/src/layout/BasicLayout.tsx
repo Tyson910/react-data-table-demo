@@ -13,7 +13,7 @@ const BasicLayout = observer(() => {
       <UserSwitchModal opened={switchUserOpen} onClose={() => setSwitchUserOpen(false)} />
       <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
         <Group gap="md">
-          <Text fw={700} size="sm" c="royalGreen.5" component={Link} to="/" style={{ textDecoration: "none" }}>
+          <Text fw={700} size="sm" c="royalGreen.5" component={Link} to="/" className="no-underline">
             MRF Generator
           </Text>
           <Button size="xs" variant="subtle" color="gray" component={Link} to="/mrf">

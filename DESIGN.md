@@ -33,9 +33,7 @@ For this challenge, MobX is intentionally used for both client and asynchronous 
 
 ## API Interaction
 
-The frontend uses the typed Hono RPC client in `frontend/src/lib/api.ts` to call the backend. Authentication uses the `/api/auth` endpoints. Approved claims are sent to the MRF generation endpoint, and the backend repository keeps generated JSON files on disk.
-
-The `authRequired` middleware in `backend/src/auth.middleware.ts` was added because the frontend sign-in check provides user feedback, but the backend must enforce the rule because API clients can bypass the UI. The middleware is attached specifically to `POST /api/mrf/generate`, the endpoint that accepts claims and writes files to the server, but can easily be added on a route by route basis.
+The frontend uses the typed Hono RPC client in `frontend/src/services/api.ts` to call the backend. Authentication uses the `/api/auth` endpoints. Approved claims are sent to the MRF generation endpoint, and the backend repository keeps generated JSON files on disk.
 
 The backend persists generated files through a repository abstraction; the pattern and its responsibilities are described below.
 
@@ -73,11 +71,12 @@ The routes would continue calling `save` and `list` without needing to know whet
 
 React Router provides the following frontend routes:
 
-- `/` — application home page
+- `/` — application home page with navigation to upload and MRF views
 - `/upload` — CSV upload, validation, editing, and approval workflow
 - `/login` — dummy user selection and authentication
+- `/mrf` — public compliance page listing generated MRF files (standalone layout, no authentication required)
 
-`BasicLayout` provides the shared header and outlet layout.
+`BasicLayout` provides the shared header and outlet layout for the authenticated pages. The `/mrf` route renders outside `BasicLayout` with its own minimal header, since it is a public-facing compliance page that external users may access directly.
 
 ## Component Responsibilities
 
@@ -85,4 +84,13 @@ React Router provides the following frontend routes:
 - `LoginPage` handles user selection and login interaction.
 - `UploadPage` coordinates file upload, grid editing, validation feedback, row removal, and approval.
 - `AppStore` owns observable state and actions shared by these components.
+- `MrfFilesPage` is a standalone public page that fetches and displays generated MRF files with preview and download capabilities.
 - Validator utilities and display-row transformations keep schema and presentation logic out of the React components where practical.
+
+## Error Handling
+
+Errors are handled at three levels:
+
+- **CSV parsing:** Papaparse may report row-level issues (malformed delimiters, inconsistent column counts). These are surfaced as a dismissible warning in the upload UI. The successfully parsed rows are still displayed so users can review what was extracted.
+- **Schema validation:** Each parsed row is validated against the claims Zod schema, which includes type coercion, enum checks, and cross-field refinements (money ordering: Billed >= Allowed >= Paid; date sequencing: Service <= Received <= Entry <= Processed <= Paid). Validation errors are collected per-row and displayed in `ValidationErrorsAlert` with field-level detail, clickable jump-to-row navigation, and expandable tooltips. Invalid rows are visually marked in the grid and excluded from selection.
+- **API errors:** Network failures and server validation errors from the MRF generation endpoint are caught in the store's `submitApproval` action and displayed as dismissible alerts. The backend uses `@hono/zod-validator` to return structured validation errors, which the store formats into user-readable messages.

@@ -8,6 +8,14 @@ const UploadPage = lazy(() => import("./pages/upload/index"));
 const LoginPage = lazy(() => import("./pages/login/index"));
 const MrfFilesPage = lazy(() => import("./pages/mrf/index"));
 
+function LoadingFallback() {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <span className="text-sm text-gray-400">Loading...</span>
+    </div>
+  );
+}
+
 const router = createBrowserRouter([
   {
     element: <BasicLayout />,
@@ -19,7 +27,7 @@ const router = createBrowserRouter([
       {
         path: "/upload",
         element: (
-          <Suspense>
+          <Suspense fallback={<LoadingFallback />}>
             <UploadPage />
           </Suspense>
         ),
@@ -27,21 +35,22 @@ const router = createBrowserRouter([
       {
         path: "/login",
         element: (
-          <Suspense>
+          <Suspense fallback={<LoadingFallback />}>
             <LoginPage />
           </Suspense>
         ),
       },
-      {
-        path: "/mrf",
-        element: (
-          <Suspense>
-            <MrfFilesPage />
-          </Suspense>
-        ),
-        loader: () => import("./pages/mrf/index").then((m) => m.mrfFilesLoader()),
-      },
     ],
+    errorElement: <NotFoundPage />,
+  },
+  {
+    path: "/mrf",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <MrfFilesPage />
+      </Suspense>
+    ),
+    loader: () => import("./pages/mrf/index").then((m) => m.mrfFilesLoader()),
     errorElement: <NotFoundPage />,
   },
 ]);

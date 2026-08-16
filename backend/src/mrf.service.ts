@@ -61,6 +61,8 @@ const ALLOWED_AMOUNT_STRATEGIES = {
   Institutional: new InstitutionalAllowedAmountStrategy(),
 } as const satisfies Record<ValidClaim["Claim Type"], AllowedAmountStrategy>;
 
+// Strategy dispatch: billing_class drives whether service_code is required, so each claim type
+// has its own strategy implementation (see ProfessionalAllowedAmountStrategy / InstitutionalAllowedAmountStrategy)
 function buildAllowedAmount(claims: ValidClaim[]): AllowedAmount {
   const first = claims[0];
   if (!first) throw new Error("Cannot build an allowed amount without claims");
@@ -102,6 +104,7 @@ function buildMrfForPlan(planId: string, claims: ValidClaim[]) {
   });
 }
 
+// Groups claims by Plan ID, then by Procedure Code, then by Provider+Service+Type to compute per-group averages
 export function generateMrfFiles(claims: ValidClaim[]): GeneratedMrfFile[] {
   const byPlan = Object.groupBy(claims, (claim) => claim["Plan ID"]);
 

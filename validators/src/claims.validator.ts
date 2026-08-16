@@ -30,6 +30,7 @@ export const claimSchema = z
     "Provider ID": nonEmptyString,
     "Provider Name": nonEmptyString,
   })
+  // Cross-field rules: money must flow Billed >= Allowed >= Paid, and lifecycle dates must be chronological
   .superRefine((data, ctx) => {
     if (data.Paid > data.Allowed) ctx.addIssue({ code: "custom", path: ["Paid"], message: "Paid must not exceed Allowed", input: data });
     if (data.Allowed > data.Billed) ctx.addIssue({ code: "custom", path: ["Allowed"], message: "Allowed must not exceed Billed", input: data });

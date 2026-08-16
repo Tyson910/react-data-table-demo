@@ -93,7 +93,7 @@ export const ValidationErrorsAlert = observer(({ gridRef }: { gridRef: RefObject
           ))}
         </Stack>
         {rows.length > ERROR_PREVIEW_COUNT && (
-          <Button variant="subtle" color="orange" size="compact-xs" onClick={() => setExpanded((v) => !v)} style={{ alignSelf: "flex-start" }}>
+          <Button variant="subtle" color="orange" size="compact-xs" className="self-start" onClick={() => setExpanded((v) => !v)}>
             {expanded ? "Show fewer rows" : `Show all ${rows.length} rows`}
           </Button>
         )}

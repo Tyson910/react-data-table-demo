@@ -3,7 +3,7 @@ import { parseResponse, DetailedError } from "hono/client";
 import Papa from "papaparse";
 
 import { claimSchema, type ValidClaim } from "@mano/validators";
-import { rpc } from "../lib/api.ts";
+import { rpc } from "../services/api.ts";
 
 const FIELD_LIST_FORMATTER = new Intl.ListFormat("en-US", { type: "unit" });
 
@@ -207,6 +207,13 @@ class AppStore {
       skipEmptyLines: true,
       complete: (results) => {
         runInAction(() => {
+          if (results.data.length === 0) {
+            this.fileError = results.errors.length > 0 ? results.errors.map((e) => e.message).join("; ") : "The file contains no data rows";
+            return;
+          }
+          if (results.errors.length > 0) {
+            this.fileError = `${results.errors.length} row${results.errors.length !== 1 ? "s" : ""} had CSV formatting issues and may contain incomplete data`;
+          }
           this.allRows = results.data.map((raw, index) => ({
             id: `row-${index}`,
             rowIndex: index + 2,
@@ -243,6 +250,10 @@ class AppStore {
 
   toggleErrors = (): void => {
     this.showErrors = !this.showErrors;
+  };
+
+  clearFileError = (): void => {
+    this.fileError = null;
   };
 
   clearFile = (): void => {

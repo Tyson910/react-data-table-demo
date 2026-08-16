@@ -1,42 +1,13 @@
-import Database from "better-sqlite3";
-import { type Generated, Kysely, SqliteDialect, sql } from "kysely";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-interface UserTable {
-  id: Generated<number>;
+export interface User {
+  id: number;
   name: string;
   email: string;
 }
 
-interface DB {
-  users: UserTable;
-}
+export const users = [
+  { id: 1, name: "Alice Johnson", email: "alice@example.com" },
+  { id: 2, name: "Bob Smith", email: "bob@example.com" },
+  { id: 3, name: "Carol Williams", email: "carol@example.com" },
+] as const satisfies User[];
 
-const dbPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "db.sqlite");
-
-const dialect = new SqliteDialect({ database: new Database(dbPath) });
-
-export const db = new Kysely<DB>({ dialect });
-
-const SEED_USERS = [
-  { name: "Alice Johnson", email: "alice@example.com" },
-  { name: "Bob Smith", email: "bob@example.com" },
-  { name: "Carol Williams", email: "carol@example.com" },
-];
-
-export async function initDb(): Promise<void> {
-  await sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE
-    )
-  `.execute(db);
-
-  await db
-    .insertInto("users")
-    .values(SEED_USERS)
-    .onConflict((oc) => oc.column("email").doNothing())
-    .execute();
-}
+// Keep the startup hook so the server entrypoint does not need storage-specific logic.
