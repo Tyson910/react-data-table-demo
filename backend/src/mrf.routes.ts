@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { sValidator } from "@hono/standard-validator";
 import { claimSchema } from "@mano/validators";
 import * as z from "zod";
+
+import { authRequired } from "./auth.middleware.js";
 import { mrfFileRepository } from "./mrf.repository.js";
 import { generateMrfFiles } from "./mrf.service.js";
 
@@ -14,7 +16,7 @@ export const mrfRoutes = new Hono()
 
     return c.json({ files: generatedFiles.map((file) => file.name) }, 201);
   })
-  .get("/files", async (c) => {
+  .get("/files", authRequired, async (c) => {
     const files = await mrfFileRepository.list();
 
     return c.json({ files });
