@@ -126,6 +126,7 @@ class AppStore {
   fileName = "";
   fileError: string | null = null;
   allRows: RowRecord[] = [];
+  parse: { status: "idle" } | { status: "parsing" } | { status: "done" } = { status: "idle" };
   showErrors = true;
 
   // Submission state
@@ -179,6 +180,10 @@ class AppStore {
   };
 
   // CSV draft selectors
+  get isParsing() {
+    return this.parse.status === "parsing";
+  }
+
   get hasData() {
     return this.allRows.length > 0;
   }
@@ -197,6 +202,8 @@ class AppStore {
 
   // CSV draft actions
   parseFile = (file: File): void => {
+    if (this.parse.status === "parsing") return;
+    this.parse = { status: "parsing" };
     this.fileName = file.name;
     this.fileError = null;
     this.allRows = [];
@@ -208,6 +215,7 @@ class AppStore {
       skipEmptyLines: true,
       complete: (results) => {
         runInAction(() => {
+          this.parse = { status: "done" };
           if (results.data.length === 0) {
             this.fileError = results.errors.length > 0 ? results.errors.map((e) => e.message).join("; ") : "The file contains no data rows";
             return;
@@ -225,6 +233,7 @@ class AppStore {
       },
       error: (error) => {
         runInAction(() => {
+          this.parse = { status: "done" };
           this.fileError = `Failed to read file: ${error.message}`;
         });
       },
@@ -266,6 +275,7 @@ class AppStore {
     this.fileName = "";
     this.fileError = null;
     this.allRows = [];
+    this.parse = { status: "idle" };
     this.showErrors = true;
     this.resetSubmission();
   };

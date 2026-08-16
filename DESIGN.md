@@ -18,7 +18,7 @@ The main workflow is:
 The application uses one MobX `AppStore` (`frontend/src/stores/store.ts`), as required by the challenge. The store is intentionally organized into three sections:
 
 - **Authentication:** current user, available users, login, logout, and session initialization.
-- **CSV draft:** selected file metadata, parsed rows, row edits, row removal, validation visibility, and derived row collections.
+- **CSV draft:** selected file metadata, parsed rows, row edits, row removal, validation visibility, and derived row collections. The parse lifecycle uses a status-discriminated union (`idle | parsing | done`) for the same reason as the async operations below.
 - **Async operations:** claim approval submission and MRF file preview fetching. Each uses a status-discriminated union (e.g. `idle | submitting | success | error`) rather than independent boolean/nullable fields, because these lifecycles have mutually exclusive phases — a request cannot be simultaneously loading and succeeded — and independent fields would let the type system represent those impossible combinations.
 
 The CSV draft is client-owned working state. The store keeps the original row data and validation results together so edits can immediately re-run validation. Computed getters expose `validClaims`, `invalidRows`, and `displayRows` without duplicating derived state.
