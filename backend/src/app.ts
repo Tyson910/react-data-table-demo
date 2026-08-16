@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import { authRoutes, verifySession } from "./auth.js";
-import { mrfRoutes } from "./mrf.js";
+import { mrfRoutes } from "./mrf.routes.js";
 
 export const app = new Hono()
   .route("/api/auth", authRoutes)

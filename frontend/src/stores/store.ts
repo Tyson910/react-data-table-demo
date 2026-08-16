@@ -120,14 +120,18 @@ function validateRow(raw: CsvRow): Pick<RowRecord, "isValid" | "validData" | "er
 }
 
 class AppStore {
+  // CSV draft state
   fileName = "";
   fileError: string | null = null;
   allRows: RowRecord[] = [];
   showErrors = true;
+
+  // Submission state
   isSubmitting = false;
   submitSuccess = false;
   submitError: string | null = null;
 
+  // Authentication state
   currentUser: AuthUser | null = null;
   availableUsers: AuthUser[] = [];
 
@@ -139,6 +143,7 @@ class AppStore {
     return this.currentUser !== null;
   }
 
+  // Authentication actions
   initAuth = async (): Promise<void> => {
     const [meRes, usersRes] = await Promise.all([rpc.api.auth.me.$get(), rpc.api.auth.users.$get()]);
     const [{ user }, users] = await Promise.all([meRes.json(), usersRes.json()]);
@@ -170,6 +175,7 @@ class AppStore {
     });
   };
 
+  // CSV draft selectors
   get hasData() {
     return this.allRows.length > 0;
   }
@@ -186,6 +192,7 @@ class AppStore {
     return this.allRows.map(toDisplayRow);
   }
 
+  // CSV draft actions
   parseFile = (file: File): void => {
     this.fileName = file.name;
     this.fileError = null;
@@ -258,6 +265,7 @@ class AppStore {
     this.fileName = "";
   };
 
+  // Submission actions
   submitApproval = async (claims: ValidClaim[]): Promise<void> => {
     this.isSubmitting = true;
     this.resetSubmission();
