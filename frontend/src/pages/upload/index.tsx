@@ -1,4 +1,4 @@
-import type { CellValueChangedEvent, ColDef, GetRowIdParams, ICellRendererParams, RowDataUpdatedEvent, RowSelectionOptions, SelectionChangedEvent } from "ag-grid-community";
+import type { CellValueChangedEvent, ColDef, FirstDataRenderedEvent, GetRowIdParams, ICellRendererParams, RowSelectionOptions, SelectionChangedEvent } from "ag-grid-community";
 import type { DisplayRow } from "../../stores/store.ts";
 
 import { useRef, useState } from "react";
@@ -86,13 +86,23 @@ const UploadPage = observer(() => {
       filter: false,
       resizable: false,
       cellRenderer: (params: ICellRendererParams<DisplayRow>) => {
-        if (!params.data?.isValid) return null;
+        if (!params.data) return null;
+        if (params.data.isValid) {
+          return (
+            <button
+              className="cursor-pointer rounded bg-green-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-green-700"
+              onClick={() => params.data && approveRow(params.data)}
+            >
+              Approve
+            </button>
+          );
+        }
         return (
           <button
-            className="cursor-pointer rounded bg-green-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-green-700"
-            onClick={() => params.data && approveRow(params.data)}
+            className="cursor-pointer rounded bg-red-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-red-700"
+            onClick={() => params.data && store.removeRows([params.data.id])}
           >
-            Approve
+            Remove
           </button>
         );
       },
@@ -109,7 +119,7 @@ const UploadPage = observer(() => {
 
   const hasFile = store.fileName !== "";
 
-  function onRowDataUpdated(event: RowDataUpdatedEvent<DisplayRow>) {
+  function onFirstDataRendered(event: FirstDataRenderedEvent<DisplayRow>) {
     event.api.forEachNodeAfterFilterAndSort((node) => {
       if (node.data?.isValid) node.setSelected(true);
     });
@@ -352,7 +362,7 @@ const UploadPage = observer(() => {
               getRowClass={getRowClass}
               isExternalFilterPresent={() => invalidOnlyRef.current && store.invalidRows.length > 0}
               doesExternalFilterPass={(node) => node.data?.isValid === false}
-              onRowDataUpdated={onRowDataUpdated}
+              onFirstDataRendered={onFirstDataRendered}
               onSelectionChanged={onSelectionChanged}
               defaultColDef={{ sortable: true, resizable: true, filter: true, editable: true }}
               onCellValueChanged={onCellValueChanged}
