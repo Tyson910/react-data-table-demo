@@ -7,10 +7,10 @@ import { observer } from "mobx-react-lite";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from "ag-grid-community";
 import { Dropzone } from "@mantine/dropzone";
-import { Alert, Badge, Box, Button, Group, Loader, Menu, Modal, Skeleton, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
+import { Alert, Badge, Box, Button, Group, Loader, Modal, Skeleton, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
 import { store } from "../../stores/store.ts";
 import type { ValidClaim } from "@mano/validators";
-import { IconAlertTriangle, IconArrowRight, IconCheck, IconChevronDown, IconCircleCheck, IconCloudUpload, IconFile, IconTrash, IconX } from "../../components/Icons.tsx";
+import { IconAlertTriangle, IconArrowRight, IconCheck, IconCircleCheck, IconCloudUpload, IconFile, IconTrash, IconX } from "../../components/Icons.tsx";
 import { ColumnToggle } from "./ColumnToggle.tsx";
 import { ValidationErrorsAlert } from "./ValidationErrorsAlert.tsx";
 import { COL_DEFS } from "./columns.ts";
@@ -365,23 +365,12 @@ const UploadPage = observer(() => {
                   Invalid only
                 </Button>
                 <ColumnToggle gridRef={gridRef} />
-                <Menu shadow="md" width={220} position="bottom-end" disabled={selectedCount === 0}>
-                  <Menu.Target>
-                    <Button rightSection={<IconChevronDown size={14} />} disabled={selectedCount === 0} loading={store.submission.status === "submitting"}>
-                      Actions {selectedCount > 0 ? `(${selectedCount})` : ""}
-                    </Button>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Label>Selected rows</Menu.Label>
-                    <Menu.Item leftSection={<IconCircleCheck size={14} />} onClick={handleApprove} disabled={store.submission.status === "submitting"}>
-                      Approve selected
-                    </Menu.Item>
-                    <Menu.Divider />
-                    <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={handleRemoveSelected}>
-                      Remove selected
-                    </Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
+                <Button size="xs" variant="subtle" color="red" leftSection={<IconTrash size={14} />} disabled={selectedCount === 0} onClick={handleRemoveSelected}>
+                  Remove
+                </Button>
+                <Button size="xs" leftSection={<IconCircleCheck size={14} />} disabled={selectedCount === 0} loading={submitting} onClick={handleApprove}>
+                  Approve{selectedCount > 0 ? ` (${selectedCount})` : ""}
+                </Button>
               </Group>
             </Group>
 
