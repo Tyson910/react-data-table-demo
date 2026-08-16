@@ -4,7 +4,7 @@ A React application for uploading, validating, and approving claims data to gene
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) v18+
+- [Node.js](https://nodejs.org/) v20+
 - [pnpm](https://pnpm.io/) v9+
 
 ## Setup
@@ -20,7 +20,7 @@ pnpm install
 Start the backend and frontend dev servers in separate terminals:
 
 ```bash
-# Terminal 1 — backend (Hono on port 3000)
+# Terminal 1 — backend (Hono on port 8080)
 pnpm dev:backend
 
 # Terminal 2 — frontend (Vite on port 5173, proxies API to backend)
