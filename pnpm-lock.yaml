@@ -87,6 +87,9 @@ importers:
       ag-grid-react:
         specifier: ^36.1.0
         version: 36.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      hono:
+        specifier: ^4.13.2
+        version: 4.13.2
       mobx:
         specifier: ^7.0.0
         version: 7.0.0
@@ -124,6 +127,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.20
         version: 10.5.4(postcss@8.5.26)
+      backend:
+        specifier: workspace:*
+        version: link:../backend
       eslint-plugin-react-you-might-not-need-an-effect:
         specifier: ^0.0.2
         version: 0.0.2(eslint@9.39.5(jiti@1.21.7))

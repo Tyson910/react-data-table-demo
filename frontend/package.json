@@ -12,18 +12,19 @@
   },
   "dependencies": {
     "@mano/validators": "workspace:*",
-    "zod": "catalog:",
     "@mantine/core": "^7.12.2",
     "@mantine/dropzone": "^7.17.8",
     "@mantine/hooks": "^7.12.2",
     "ag-grid-community": "^36.1.0",
     "ag-grid-react": "^36.1.0",
+    "hono": "^4.13.2",
     "mobx": "^7.0.0",
     "mobx-react-lite": "^5.0.0",
     "papaparse": "^5.6.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.1"
+    "react-router-dom": "^6.26.1",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/papaparse": "^5.5.2",
@@ -31,6 +32,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
+    "backend": "workspace:*",
     "eslint-plugin-react-you-might-not-need-an-effect": "^0.0.2",
     "postcss": "^8.4.45",
     "postcss-preset-mantine": "^1.17.0",

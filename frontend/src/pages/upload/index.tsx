@@ -11,11 +11,12 @@ import type {
 } from "ag-grid-community";
 
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from "ag-grid-community";
 import { Dropzone } from "@mantine/dropzone";
-import { Alert, Badge, Box, Button, Checkbox, Group, Menu, Popover, ScrollArea, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
+import { Alert, Badge, Box, Button, Checkbox, Group, Menu, Modal, Popover, ScrollArea, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
 import { store } from "../../stores/store.ts";
 import type { DisplayRow } from "../../stores/store.ts";
 import { type ValidClaim, claimSchema } from "../../utils/claims.schema.ts";
@@ -189,7 +190,9 @@ function ErrorTooltip({ errors }: { errors: { field: string; message: string }[]
 
 const UploadPage = observer(() => {
   const gridRef = useRef<AgGridReact<DisplayRow>>(null);
+  const navigate = useNavigate();
   const [selectedCount, setSelectedCount] = useState(0);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   /**
    * MobX observable arrays are a stable Proxy — same reference forever, even as items change.
@@ -217,6 +220,10 @@ const UploadPage = observer(() => {
 
   const handleApprove = () => {
     if (!gridRef.current || selectedCount === 0) return;
+    if (!store.isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
     const selected = gridRef.current.api.getSelectedRows();
     const selectedRowIds = new Set(selected.map((r) => r.id));
     const claims = store.allRows.filter((r) => selectedRowIds.has(r.id) && r.isValid && r.validData).map((r) => r.validData!) satisfies ValidClaim[];
@@ -232,6 +239,24 @@ const UploadPage = observer(() => {
 
   return (
     <Stack p="xl" gap="lg" bg="gray.0" style={{ minHeight: "100vh" }}>
+      <Modal opened={authModalOpen} onClose={() => setAuthModalOpen(false)} title="Sign in required" centered size="sm">
+        <Stack gap="md">
+          <Text size="sm">You must be signed in to approve claims.</Text>
+          <Group justify="flex-end" gap="xs">
+            <Button variant="default" onClick={() => setAuthModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setAuthModalOpen(false);
+                navigate("/login");
+              }}
+            >
+              Go to sign in
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
       <div>
         <Title order={2}>Claims Upload</Title>
         <Text size="sm" c="dimmed" mt={4}>

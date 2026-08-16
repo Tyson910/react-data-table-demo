@@ -1,7 +1,12 @@
 import { makeAutoObservable, runInAction } from "mobx";
+import { parseResponse, DetailedError } from "hono/client";
 import Papa from "papaparse";
+
 import { claimSchema } from "../utils/claims.schema.ts";
 import type { ValidClaim, ValidationError } from "../utils/claims.schema.ts";
+import { rpc } from "../lib/api.ts";
+
+export type AuthUser = { id: number; name: string; email: string };
 
 type CsvRow = Record<string, string>;
 
@@ -117,9 +122,47 @@ class AppStore {
   isSubmitting = false;
   submitSuccess = false;
 
+  currentUser: AuthUser | null = null;
+  availableUsers: AuthUser[] = [];
+
   constructor() {
     makeAutoObservable(this);
   }
+
+  get isAuthenticated(): boolean {
+    return this.currentUser !== null;
+  }
+
+  initAuth = async (): Promise<void> => {
+    const [meRes, usersRes] = await Promise.all([rpc.api.auth.me.$get(), rpc.api.auth.users.$get()]);
+    const [{ user }, users] = await Promise.all([meRes.json(), usersRes.json()]);
+    runInAction(() => {
+      this.currentUser = user;
+      this.availableUsers = users;
+    });
+  };
+
+  login = async (userId: number): Promise<void> => {
+    try {
+      const { user } = await parseResponse(rpc.api.auth.login.$post({ json: { userId } }));
+      runInAction(() => {
+        this.currentUser = user;
+      });
+    } catch (error) {
+      if (error instanceof DetailedError) {
+        throw new Error(error.message);
+      } else {
+        throw new Error("Login failed");
+      }
+    }
+  };
+
+  logout = async (): Promise<void> => {
+    await rpc.api.auth.logout.$post({});
+    runInAction(() => {
+      this.currentUser = null;
+    });
+  };
 
   get hasData() {
     return this.allRows.length > 0;
@@ -221,3 +264,4 @@ class AppStore {
 }
 
 export const store = new AppStore();
+void store.initAuth();
