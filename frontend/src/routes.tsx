@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import BasicLayout from "./layout/BasicLayout";
 import NotFoundPage from "./pages/error/NotFound";
+import ErrorPage from "./pages/error/ErrorPage";
 import MainPage from "./pages/index";
 
 const UploadPage = lazy(() => import("./pages/upload/index"));
@@ -50,7 +51,11 @@ const router = createBrowserRouter([
         loader: () => import("./pages/mrf/index").then((m) => m.mrfFilesLoader()),
       },
     ],
-    errorElement: <NotFoundPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "*",
+    element: <NotFoundPage />,
   },
 ]);
 
