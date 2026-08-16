@@ -1,10 +1,4 @@
-import type {
-  CellValueChangedEvent,
-  GetRowIdParams,
-  RowDataUpdatedEvent,
-  RowSelectionOptions,
-  SelectionChangedEvent,
-} from "ag-grid-community";
+import type { CellValueChangedEvent, GetRowIdParams, RowDataUpdatedEvent, RowSelectionOptions, SelectionChangedEvent } from "ag-grid-community";
 import type { DisplayRow } from "../../stores/store.ts";
 
 import { useRef, useState } from "react";
@@ -16,17 +10,7 @@ import { Dropzone } from "@mantine/dropzone";
 import { Alert, Badge, Box, Button, Group, Menu, Modal, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
 import { store } from "../../stores/store.ts";
 import type { ValidClaim } from "@mano/validators";
-import {
-  IconAlertTriangle,
-  IconArrowRight,
-  IconCheck,
-  IconChevronDown,
-  IconCircleCheck,
-  IconCloudUpload,
-  IconFile,
-  IconTrash,
-  IconX,
-} from "../../components/Icons.tsx";
+import { IconAlertTriangle, IconArrowRight, IconCheck, IconChevronDown, IconCircleCheck, IconCloudUpload, IconFile, IconTrash, IconX } from "../../components/Icons.tsx";
 import { ColumnToggle } from "./ColumnToggle.tsx";
 import { ValidationErrorsAlert } from "./ValidationErrorsAlert.tsx";
 import { COL_DEFS } from "./columns.ts";

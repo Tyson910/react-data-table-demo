@@ -1,9 +1,9 @@
 import type { RefObject } from "react";
 import type { DisplayRow, InvalidRow } from "../../stores/store.ts";
+import type { AgGridReact } from "ag-grid-react";
 
 import { useState } from "react";
 import { observer } from "mobx-react-lite";
-import { AgGridReact } from "ag-grid-react";
 import { Alert, Badge, Button, Group, Stack, Text, Tooltip, UnstyledButton } from "@mantine/core";
 import { IconAlertTriangle } from "../../components/Icons.tsx";
 import { store } from "../../stores/store.ts";

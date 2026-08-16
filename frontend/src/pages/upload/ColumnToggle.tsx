@@ -1,9 +1,9 @@
 import type { RefObject } from "react";
 import type { ColDef } from "ag-grid-community";
+import type { AgGridReact } from "ag-grid-react";
 import type { DisplayRow } from "../../stores/store.ts";
 
 import { useState } from "react";
-import { AgGridReact } from "ag-grid-react";
 import { Button, Checkbox, Popover, ScrollArea, Stack } from "@mantine/core";
 import { IconColumns } from "../../components/Icons.tsx";
 import { COL_DEFS } from "./columns.ts";
