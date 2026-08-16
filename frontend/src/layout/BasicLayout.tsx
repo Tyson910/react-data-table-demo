@@ -1,11 +1,16 @@
+import { useState } from "react";
 import { Outlet, Link } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Button, Group, Text } from "@mantine/core";
+import UserSwitchModal from "../components/UserSwitchModal.tsx";
 import { store } from "../stores/store.ts";
 
 const BasicLayout = observer(() => {
+  const [switchUserOpen, setSwitchUserOpen] = useState(false);
+
   return (
     <div className="flex h-screen w-full flex-col">
+      <UserSwitchModal opened={switchUserOpen} onClose={() => setSwitchUserOpen(false)} />
       <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
         <Group gap="md">
           <Text fw={700} size="sm" c="royalGreen.5" component={Link} to="/" style={{ textDecoration: "none" }}>
@@ -21,8 +26,11 @@ const BasicLayout = observer(() => {
               <Text size="sm" c="dimmed">
                 {store.currentUser.name}
               </Text>
-              <Button size="xs" variant="default" component={Link} to="/login">
+              <Button size="xs" variant="default" onClick={() => setSwitchUserOpen(true)}>
                 Switch user
+              </Button>
+              <Button size="xs" variant="subtle" color="gray" onClick={() => void store.logout()}>
+                Log out
               </Button>
             </>
           ) : (
