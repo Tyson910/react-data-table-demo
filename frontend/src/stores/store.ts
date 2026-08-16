@@ -328,12 +328,21 @@ class AppStore {
     try {
       const res = await rpc.api.mrf.generate.$post({ json: claims });
       if (!res.ok) {
-        const { error } = await res.json();
-        const messages = error.issues.map((issue) => {
-          const field = issue.path.length > 0 ? `${FIELD_LIST_FORMATTER.format(issue.path.map(String))}: ` : "";
-          return `${field}${issue.message}`;
-        });
-        this.submitError = `Request failed: ${FIELD_LIST_FORMATTER.format(messages)}`;
+        const status: number = res.status;
+        if (status === 401) {
+          this.submitError = "You must be signed in to approve claims.";
+          return;
+        }
+        try {
+          const { error } = await res.json();
+          const messages = error.issues.map((issue: { path: PropertyKey[]; message: string }) => {
+            const field = issue.path.length > 0 ? `${FIELD_LIST_FORMATTER.format(issue.path.map(String))}: ` : "";
+            return `${field}${issue.message}`;
+          });
+          this.submitError = `Request failed: ${FIELD_LIST_FORMATTER.format(messages)}`;
+        } catch {
+          this.submitError = `Request failed (${status}).`;
+        }
         return;
       }
       this.submitSuccess = true;
