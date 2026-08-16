@@ -151,101 +151,103 @@ const MrfFilesPage = observer(() => {
   const files = z.array(mrfFileMetaSchema).parse(useLoaderData());
 
   return (
-    <Stack p="xl" gap="lg">
-      <div>
-        <Title order={2}>Machine-Readable Files</Title>
-        <Text size="sm" c="dimmed" mt={4}>
-          These machine-readable files are published in compliance with the Transparency in Coverage final rule. Each file contains allowed amount data for out-of-network
-          providers.
-        </Text>
-      </div>
-
-      {files.length === 0 && (
-        <Stack align="center" justify="center" gap="sm" className="rounded-lg border border-dashed border-gray-300 bg-gray-50/60 px-6 py-14">
-          <ThemeIcon size={56} radius="xl" variant="light" color="gray">
-            <IconFileCode size={28} />
-          </ThemeIcon>
-          <Text fw={600}>No MRF files yet</Text>
-          <Text size="sm" c="dimmed" ta="center" maw={440}>
-            Generated files appear here once claims are uploaded and approved.
+    <div className="min-h-screen bg-gray-50">
+      <Stack gap={24} className="p-6" maw={1200} mx="auto">
+        <div>
+          <Title order={2}>Machine-Readable Files</Title>
+          <Text size="sm" c="dimmed" mt={4}>
+            These machine-readable files are published in compliance with the Transparency in Coverage final rule. Each file contains allowed amount data for out-of-network
+            providers.
           </Text>
-          <Button component={Link} to="/upload" size="sm" leftSection={<IconCloudUpload size={16} />}>
-            Upload claims
-          </Button>
-        </Stack>
-      )}
-
-      <PreviewModal />
-
-      {files.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <Table striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>File</Table.Th>
-                <Table.Th>Plan</Table.Th>
-                <Table.Th>Reporting Entity</Table.Th>
-                <Table.Th>Last Updated</Table.Th>
-                <Table.Th>Size</Table.Th>
-                <Table.Th>Created</Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {files.map((file) => (
-                <Table.Tr key={file.name}>
-                  <Table.Td>
-                    <Group gap={8} wrap="nowrap">
-                      <IconFileCode size={16} />
-                      <Text size="sm" fw={500} truncate>
-                        {file.name}
-                      </Text>
-                    </Group>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">{file.planName || "—"}</Text>
-                    {file.planId && (
-                      <Badge size="xs" variant="light" color="gray" mt={2}>
-                        {file.planId}
-                      </Badge>
-                    )}
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">{file.reportingEntityName || "—"}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">{file.lastUpdatedOn || "—"}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" c="dimmed">
-                      {formatBytes(file.size)}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" c="dimmed">
-                      {formatDate(file.createdAt)}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs" wrap="nowrap">
-                      <Button variant="subtle" size="compact-xs" color="gray" leftSection={<IconEye size={14} />} onClick={() => store.openMrfPreview(file.name)}>
-                        Preview
-                      </Button>
-                      <Anchor href={`/api/mrf/files/${file.name}`} target="_blank" size="sm">
-                        <Group gap={4} wrap="nowrap">
-                          <IconDownload size={14} />
-                          Download
-                        </Group>
-                      </Anchor>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
         </div>
-      )}
-    </Stack>
+
+        {files.length === 0 && (
+          <Stack align="center" justify="center" gap="sm" className="rounded-lg border border-dashed border-gray-300 bg-gray-50/60 px-6 py-14">
+            <ThemeIcon size={56} radius="xl" variant="light" color="gray">
+              <IconFileCode size={28} />
+            </ThemeIcon>
+            <Text fw={600}>No MRF files yet</Text>
+            <Text size="sm" c="dimmed" ta="center" maw={440}>
+              Generated files appear here once claims are uploaded and approved.
+            </Text>
+            <Button component={Link} to="/upload" size="sm" leftSection={<IconCloudUpload size={16} />}>
+              Upload claims
+            </Button>
+          </Stack>
+        )}
+
+        <PreviewModal />
+
+        {files.length > 0 && (
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <Table striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>File</Table.Th>
+                  <Table.Th>Plan</Table.Th>
+                  <Table.Th>Reporting Entity</Table.Th>
+                  <Table.Th>Last Updated</Table.Th>
+                  <Table.Th>Size</Table.Th>
+                  <Table.Th>Created</Table.Th>
+                  <Table.Th />
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {files.map((file) => (
+                  <Table.Tr key={file.name}>
+                    <Table.Td>
+                      <Group gap={8} wrap="nowrap">
+                        <IconFileCode size={16} />
+                        <Text size="sm" fw={500} truncate>
+                          {file.name}
+                        </Text>
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{file.planName || "—"}</Text>
+                      {file.planId && (
+                        <Badge size="xs" variant="light" color="gray" mt={2}>
+                          {file.planId}
+                        </Badge>
+                      )}
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{file.reportingEntityName || "—"}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{file.lastUpdatedOn || "—"}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed">
+                        {formatBytes(file.size)}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed">
+                        {formatDate(file.createdAt)}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap="xs" wrap="nowrap">
+                        <Button variant="subtle" size="compact-xs" color="gray" leftSection={<IconEye size={14} />} onClick={() => store.openMrfPreview(file.name)}>
+                          Preview
+                        </Button>
+                        <Anchor href={`/api/mrf/files/${file.name}`} target="_blank" size="sm">
+                          <Group gap={4} wrap="nowrap">
+                            <IconDownload size={14} />
+                            Download
+                          </Group>
+                        </Anchor>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </div>
+        )}
+      </Stack>
+    </div>
   );
 });
 
