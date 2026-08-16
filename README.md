@@ -70,6 +70,10 @@ validators/        Shared Zod schemas (@mano/validators workspace package)
 | [Hono](https://hono.dev/)                | Backend API framework     |
 |                                          |
 
+## Authentication
+
+The app uses cookie-based session authentication with demo users seeded in memory. No registration is needed — click **Sign in** in the header to pick a user, or use **Switch user** to change identities. Authentication is required to approve claims; unauthenticated users can still upload and review CSV data.
+
 ## Configuration
 
 The backend uses an in-memory JavaScript array seeded with demo users. Generated MRF files are stored in `backend/mrf-output/`.

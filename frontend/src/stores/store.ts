@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from "mobx";
 import { parseResponse, DetailedError } from "hono/client";
 import Papa from "papaparse";
 
-import { claimSchema, type ValidClaim } from "@mano/validators";
+import { claimSchema, AllowedAmountsFileSchema, type ValidClaim, type AllowedAmountsFile } from "@mano/validators";
 import { rpc } from "../services/api.ts";
 
 const FIELD_LIST_FORMATTER = new Intl.ListFormat("en-US", { type: "unit" });
@@ -137,6 +137,9 @@ class AppStore {
   currentUser: AuthUser | null = null;
   availableUsers: AuthUser[] = [];
 
+  // MRF preview state
+  mrfPreview: { name: string; data: AllowedAmountsFile | null; error: string | null; loading: boolean } | null = null;
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -222,6 +225,11 @@ class AppStore {
           }));
         });
       },
+      error: (error) => {
+        runInAction(() => {
+          this.fileError = `Failed to read file: ${error.message}`;
+        });
+      },
     });
   };
 
@@ -276,6 +284,41 @@ class AppStore {
   setFileError = (message: string): void => {
     this.fileError = message;
     this.fileName = "";
+  };
+
+  // MRF preview actions
+  openMrfPreview = (name: string): void => {
+    this.mrfPreview = { name, data: null, error: null, loading: true };
+    void this.fetchMrfPreview(name);
+  };
+
+  closeMrfPreview = (): void => {
+    this.mrfPreview = null;
+  };
+
+  private fetchMrfPreview = async (name: string): Promise<void> => {
+    try {
+      const response = await rpc.api.mrf.files[":name"].preview.$get({ param: { name } });
+      if (!response.ok) {
+        runInAction(() => {
+          this.mrfPreview = { name, data: null, error: "Failed to load or validate file content.", loading: false };
+        });
+        return;
+      }
+      const parsed: unknown = await response.json();
+      const result = AllowedAmountsFileSchema.safeParse(parsed);
+      runInAction(() => {
+        if (!result.success) {
+          this.mrfPreview = { name, data: null, error: "Preview response did not match the MRF schema.", loading: false };
+        } else {
+          this.mrfPreview = { name, data: result.data, error: null, loading: false };
+        }
+      });
+    } catch {
+      runInAction(() => {
+        this.mrfPreview = { name, data: null, error: "Failed to load file content.", loading: false };
+      });
+    }
   };
 
   // Submission actions

@@ -1,4 +1,4 @@
-import type { CellValueChangedEvent, GetRowIdParams, RowDataUpdatedEvent, RowSelectionOptions, SelectionChangedEvent } from "ag-grid-community";
+import type { CellValueChangedEvent, ColDef, GetRowIdParams, ICellRendererParams, RowDataUpdatedEvent, RowSelectionOptions, SelectionChangedEvent } from "ag-grid-community";
 import type { DisplayRow } from "../../stores/store.ts";
 
 import { useRef, useState } from "react";
@@ -64,6 +64,41 @@ const UploadPage = observer(() => {
   const [invalidOnly, setInvalidOnly] = useState(false);
   const invalidOnlyRef = useRef(false);
 
+  function approveRow(row: DisplayRow) {
+    if (!store.isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    const record = store.allRows.find((r) => r.id === row.id);
+    if (!record?.isValid || !record.validData) return;
+    void store.submitApproval([record.validData]);
+  }
+
+  const colDefs: ColDef<DisplayRow>[] = [
+    ...COL_DEFS,
+    {
+      headerName: "",
+      field: undefined,
+      width: 90,
+      pinned: "right",
+      editable: false,
+      sortable: false,
+      filter: false,
+      resizable: false,
+      cellRenderer: (params: ICellRendererParams<DisplayRow>) => {
+        if (!params.data?.isValid) return null;
+        return (
+          <button
+            className="cursor-pointer rounded bg-green-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-green-700"
+            onClick={() => params.data && approveRow(params.data)}
+          >
+            Approve
+          </button>
+        );
+      },
+    },
+  ];
+
   function toggleInvalidOnly() {
     invalidOnlyRef.current = !invalidOnlyRef.current;
     setInvalidOnly(invalidOnlyRef.current);
@@ -110,7 +145,7 @@ const UploadPage = observer(() => {
   };
 
   return (
-    <Stack p="xl" gap="lg" bg="gray.0" className="min-h-screen">
+    <Stack className="min-h-screen gap-6 bg-gray-50 p-6">
       <Modal opened={authModalOpen} onClose={() => setAuthModalOpen(false)} title="Sign in required" centered size="sm">
         <Stack gap="md">
           <Text size="sm">You must be signed in to approve claims.</Text>
@@ -311,7 +346,7 @@ const UploadPage = observer(() => {
               ref={gridRef}
               theme={gridTheme}
               rowData={rowData}
-              columnDefs={COL_DEFS}
+              columnDefs={colDefs}
               getRowId={getRowId}
               rowSelection={ROW_SELECTION}
               getRowClass={getRowClass}

@@ -40,17 +40,16 @@ const router = createBrowserRouter([
           </Suspense>
         ),
       },
+      {
+        path: "/mrf",
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <MrfFilesPage />
+          </Suspense>
+        ),
+        loader: () => import("./pages/mrf/index").then((m) => m.mrfFilesLoader()),
+      },
     ],
-    errorElement: <NotFoundPage />,
-  },
-  {
-    path: "/mrf",
-    element: (
-      <Suspense fallback={<LoadingFallback />}>
-        <MrfFilesPage />
-      </Suspense>
-    ),
-    loader: () => import("./pages/mrf/index").then((m) => m.mrfFilesLoader()),
     errorElement: <NotFoundPage />,
   },
 ]);
