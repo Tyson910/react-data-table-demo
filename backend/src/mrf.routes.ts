@@ -20,4 +20,15 @@ export const mrfRoutes = new Hono()
     const files = await mrfFileRepository.list();
 
     return c.json({ files });
+  })
+  .get("/files/:name", zValidator("param", z.object({ name: z.string().min(1, "File name is required") })), async (c) => {
+    const { name } = c.req.valid("param");
+    const file = await mrfFileRepository.get(name);
+    if (!file) return c.json({ error: "File not found" }, 404);
+
+    // c.json() would double-encode: file.content is already a JSON string, and c.json() calls JSON.stringify
+    return c.text(file.content, 200, {
+      "Content-Type": "application/json",
+      "Content-Disposition": `attachment; filename="${file.name}"`,
+    });
   });
