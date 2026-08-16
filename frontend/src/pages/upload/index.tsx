@@ -2,12 +2,12 @@ import type { CellValueChangedEvent, ColDef, FirstDataRenderedEvent, GetRowIdPar
 import type { DisplayRow } from "../../stores/store.ts";
 
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from "ag-grid-community";
 import { Dropzone } from "@mantine/dropzone";
-import { Alert, Badge, Box, Button, Group, Menu, Modal, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
+import { Alert, Badge, Box, Button, Group, Loader, Menu, Modal, Skeleton, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
 import { store } from "../../stores/store.ts";
 import type { ValidClaim } from "@mano/validators";
 import { IconAlertTriangle, IconArrowRight, IconCheck, IconChevronDown, IconCircleCheck, IconCloudUpload, IconFile, IconTrash, IconX } from "../../components/Icons.tsx";
@@ -41,15 +41,23 @@ const gridTheme = themeQuartz.withParams({
   rowHoverColor: "#f0f7f0",
 });
 
-function FlowStep({ n, label }: { n: number; label: string }) {
+type StepState = "todo" | "active" | "done" | "loading";
+
+function FlowStep({ n, label, state }: { n: number; label: string; state: StepState }) {
   return (
     <Group gap={6} wrap="nowrap">
-      <ThemeIcon size={22} radius="xl" variant="light" color="gray">
-        <Text size="xs" fw={700} c="dimmed">
-          {n}
-        </Text>
+      <ThemeIcon size={22} radius="xl" variant={state === "todo" ? "light" : "filled"} color={state === "todo" ? "gray" : "green"}>
+        {state === "done" ? (
+          <IconCheck size={12} />
+        ) : state === "loading" ? (
+          <Loader size={10} color="white" />
+        ) : (
+          <Text size="xs" fw={700}>
+            {n}
+          </Text>
+        )}
       </ThemeIcon>
-      <Text size="sm" c="dimmed">
+      <Text size="sm" c={state === "todo" ? "dimmed" : state === "active" ? "dark" : "green.7"} fw={state === "active" ? 600 : 400}>
         {label}
       </Text>
     </Group>
@@ -119,6 +127,12 @@ const UploadPage = observer(() => {
   const rowData = [...store.displayRows];
 
   const hasFile = store.fileName !== "";
+  const submitting = store.submission.status === "submitting";
+  const succeeded = store.submission.status === "success";
+
+  const uploadStep: StepState = store.isParsing ? "loading" : hasFile ? "done" : "active";
+  const reviewStep: StepState = succeeded || submitting ? "done" : store.hasData ? "active" : "todo";
+  const approveStep: StepState = succeeded ? "done" : submitting ? "loading" : selectedCount > 0 ? "active" : "todo";
 
   function onFirstDataRendered(event: FirstDataRenderedEvent<DisplayRow>) {
     event.api.forEachNodeAfterFilterAndSort((node) => {
@@ -133,7 +147,10 @@ const UploadPage = observer(() => {
 
   function onCellValueChanged(event: CellValueChangedEvent<DisplayRow>) {
     if (!event.colDef.field || event.colDef.field === "Claim ID") return;
+    const wasValid = event.data.isValid;
     store.updateRow(event.data.id, event.colDef.field, String(event.newValue ?? ""));
+    const fixed = !wasValid && store.allRows.find((r) => r.id === event.data.id)?.isValid;
+    if (fixed) event.api.flashCells({ rowNodes: [event.node] });
   }
 
   const handleApprove = () => {
@@ -183,11 +200,11 @@ const UploadPage = observer(() => {
       </div>
 
       <Group justify="center" gap="sm">
-        <FlowStep n={1} label="Upload CSV" />
+        <FlowStep n={1} label="Upload CSV" state={uploadStep} />
         <IconArrowRight size={14} />
-        <FlowStep n={2} label="Review rows" />
+        <FlowStep n={2} label="Review rows" state={reviewStep} />
         <IconArrowRight size={14} />
-        <FlowStep n={3} label="Approve" />
+        <FlowStep n={3} label="Approve" state={approveStep} />
       </Group>
 
       <div className="rounded-2xl bg-green-50/70 p-1.5 ring-1 ring-green-100">
@@ -201,7 +218,7 @@ const UploadPage = observer(() => {
           }}
           accept={ACCEPTED_MIME}
           maxFiles={1}
-          loading={store.submission.status === "submitting"}
+          loading={store.isParsing || store.submission.status === "submitting"}
           radius="xl"
           p={hasFile ? "xs" : "xl"}
           className="border-2"
@@ -295,7 +312,14 @@ const UploadPage = observer(() => {
 
       {store.submission.status === "success" && (
         <Alert color="green" title="Submitted successfully" icon={<IconCircleCheck size={18} />}>
-          {selectedCount} claim{selectedCount !== 1 ? "s" : ""} sent for MRF generation.
+          <Group justify="space-between" wrap="nowrap" gap="xs">
+            <Text size="sm">
+              {selectedCount} claim{selectedCount !== 1 ? "s" : ""} sent for MRF generation.
+            </Text>
+            <Button component={Link} to="/mrf" size="xs" variant="light" color="green" rightSection={<IconArrowRight size={14} />}>
+              View generated files
+            </Button>
+          </Group>
         </Alert>
       )}
 
@@ -303,6 +327,16 @@ const UploadPage = observer(() => {
         <Alert color="red" title="Submission failed" icon={<IconAlertTriangle size={18} />} withCloseButton onClose={store.resetSubmission}>
           {store.submission.message}
         </Alert>
+      )}
+
+      {store.isParsing && (
+        <Stack gap="sm" className="flex-1">
+          <Group justify="space-between">
+            <Skeleton height={26} radius={32} width={180} />
+            <Skeleton height={26} width={340} />
+          </Group>
+          <Skeleton height={520} radius="sm" />
+        </Stack>
       )}
 
       {store.hasData && (
@@ -315,7 +349,7 @@ const UploadPage = observer(() => {
               {store.invalidRows.length > 0 && (
                 <Tooltip label={store.showErrors ? "Hide error details" : "Show error details"}>
                   <Badge size="lg" variant="light" color="orange" leftSection={<IconAlertTriangle size={12} />} className="cursor-pointer" onClick={() => store.toggleErrors()}>
-                    {store.invalidRows.length} invalid — not selectable
+                    {store.invalidRows.length} invalid
                   </Badge>
                 </Tooltip>
               )}
@@ -365,7 +399,24 @@ const UploadPage = observer(() => {
               doesExternalFilterPass={(node) => node.data?.isValid === false}
               onFirstDataRendered={onFirstDataRendered}
               onSelectionChanged={onSelectionChanged}
-              defaultColDef={{ sortable: true, resizable: true, filter: true, editable: true }}
+              enableBrowserTooltips
+              defaultColDef={{
+                sortable: true,
+                resizable: true,
+                filter: true,
+                editable: true,
+                cellClass: (params) => {
+                  if (!params.data || params.data.isValid) return undefined;
+                  return params.data.errors.some((e) => e.field === params.colDef.field) ? "bg-red-200/70 font-medium" : undefined;
+                },
+                tooltipValueGetter: (params) => {
+                  const colDef = params.colDef;
+                  if (!params.data || params.data.isValid || !colDef || !("field" in colDef)) return null;
+                  const field = colDef.field;
+                  const messages = params.data.errors.filter((e) => e.field === field).map((e) => e.message);
+                  return messages.length > 0 ? messages.join("\n") : null;
+                },
+              }}
               onCellValueChanged={onCellValueChanged}
             />
           </Box>

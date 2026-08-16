@@ -77,9 +77,6 @@ export const ValidationErrorsAlert = observer(({ gridRef }: { gridRef: RefObject
       onClose={() => store.dismissErrors()}
     >
       <Stack gap="xs">
-        <Text size="xs" c="dimmed">
-          Click a row to jump to it in the table. Hover for full error details.
-        </Text>
         <Group gap={6}>
           {summary.map((s) => (
             <Badge key={s.field} color="orange" variant="light" size="sm">

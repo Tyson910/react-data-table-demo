@@ -1,10 +1,10 @@
 import type { AllowedAmountsFile } from "@mano/validators";
 
-import { useLoaderData } from "react-router-dom";
+import { useLoaderData, Link } from "react-router-dom";
 import { observer } from "mobx-react-lite";
-import { Alert, Anchor, Badge, Button, Code, Group, Loader, Modal, Paper, ScrollArea, SimpleGrid, Skeleton, Stack, Table, Tabs, Text, Title } from "@mantine/core";
+import { Anchor, Badge, Button, Code, Group, Loader, Modal, Paper, ScrollArea, SimpleGrid, Skeleton, Stack, Table, Tabs, Text, ThemeIcon, Title } from "@mantine/core";
 import * as z from "zod";
-import { IconDownload, IconEye, IconFileCode } from "../../components/Icons.tsx";
+import { IconCloudUpload, IconDownload, IconEye, IconFileCode } from "../../components/Icons.tsx";
 import { formatBytes, formatDate } from "../../utils/format.ts";
 import { store } from "../../stores/store.ts";
 import { rpc } from "../../services/api.ts";
@@ -161,9 +161,18 @@ const MrfFilesPage = observer(() => {
       </div>
 
       {files.length === 0 && (
-        <Alert color="blue" variant="light">
-          No MRF files have been generated yet. Upload and approve claims to generate files.
-        </Alert>
+        <Stack align="center" justify="center" gap="sm" className="rounded-lg border border-dashed border-gray-300 bg-gray-50/60 px-6 py-14">
+          <ThemeIcon size={56} radius="xl" variant="light" color="gray">
+            <IconFileCode size={28} />
+          </ThemeIcon>
+          <Text fw={600}>No MRF files yet</Text>
+          <Text size="sm" c="dimmed" ta="center" maw={440}>
+            Generated files appear here once claims are uploaded and approved.
+          </Text>
+          <Button component={Link} to="/upload" size="sm" leftSection={<IconCloudUpload size={16} />}>
+            Upload claims
+          </Button>
+        </Stack>
       )}
 
       <PreviewModal />
