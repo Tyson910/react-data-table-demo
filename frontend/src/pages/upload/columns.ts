@@ -2,7 +2,7 @@ import type { ColDef, ValueFormatterParams } from "ag-grid-community";
 import type { DisplayRow } from "../../stores/store.ts";
 
 import { claimSchema } from "@mano/validators";
-import { formatDate } from "../../lib/format.ts";
+import { formatDate } from "../../utils/format.ts";
 
 const moneyFormatter = (p: ValueFormatterParams): string => {
   const v: unknown = p.value;

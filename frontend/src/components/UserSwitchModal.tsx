@@ -48,16 +48,13 @@ const UserSwitchModal = observer(({ opened, onClose }: UserSwitchModalProps) => 
           Currently signed in as <strong>{store.currentUser?.name}</strong>. Select a different user to continue.
         </Text>
 
-        {error && <Alert color="red" variant="light">{error}</Alert>}
+        {error && (
+          <Alert color="red" variant="light">
+            {error}
+          </Alert>
+        )}
 
-        <Select
-          label="User"
-          placeholder="Select a user…"
-          data={userOptions}
-          value={selectedId}
-          onChange={setSelectedId}
-          searchable
-        />
+        <Select label="User" placeholder="Select a user…" data={userOptions} value={selectedId} onChange={setSelectedId} searchable />
 
         <Button onClick={() => void handleSwitch()} loading={loading} disabled={!selectedId} fullWidth>
           Switch user

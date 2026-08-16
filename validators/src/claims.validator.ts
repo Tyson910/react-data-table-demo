@@ -41,7 +41,6 @@ export const claimSchema = z
       ["Entry Date", data["Entry Date"]],
       ["Processed Date", data["Processed Date"]],
       ["Paid Date", data["Paid Date"]],
-      
     ] as const satisfies [string, Date][];
     dates.slice(1).forEach(([currName, curr], i) => {
       const [prevName, prev] = dates[i]!;
