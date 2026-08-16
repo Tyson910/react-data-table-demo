@@ -129,16 +129,14 @@ class AppStore {
   showErrors = true;
 
   // Submission state
-  isSubmitting = false;
-  submitSuccess = false;
-  submitError: string | null = null;
+  submission: { status: "idle" } | { status: "submitting" } | { status: "success" } | { status: "error"; message: string } = { status: "idle" };
 
   // Authentication state
   currentUser: AuthUser | null = null;
   availableUsers: AuthUser[] = [];
 
   // MRF preview state
-  mrfPreview: { name: string; data: AllowedAmountsFile | null; error: string | null; loading: boolean } | null = null;
+  mrfPreview: null | { name: string; status: "loading" } | { name: string; status: "error"; error: string } | { name: string; status: "success"; data: AllowedAmountsFile } = null;
 
   constructor() {
     makeAutoObservable(this);
@@ -273,12 +271,7 @@ class AppStore {
   };
 
   resetSubmission = (): void => {
-    this.submitSuccess = false;
-    this.submitError = null;
-  };
-
-  clearSubmitError = (): void => {
-    this.submitError = null;
+    this.submission = { status: "idle" };
   };
 
   setFileError = (message: string): void => {
@@ -288,7 +281,7 @@ class AppStore {
 
   // MRF preview actions
   openMrfPreview = (name: string): void => {
-    this.mrfPreview = { name, data: null, error: null, loading: true };
+    this.mrfPreview = { name, status: "loading" };
     void this.fetchMrfPreview(name);
   };
 
@@ -301,7 +294,7 @@ class AppStore {
       const response = await rpc.api.mrf.files[":name"].preview.$get({ param: { name } });
       if (!response.ok) {
         runInAction(() => {
-          this.mrfPreview = { name, data: null, error: "Failed to load or validate file content.", loading: false };
+          this.mrfPreview = { name, status: "error", error: "Failed to load or validate file content." };
         });
         return;
       }
@@ -309,28 +302,27 @@ class AppStore {
       const result = AllowedAmountsFileSchema.safeParse(parsed);
       runInAction(() => {
         if (!result.success) {
-          this.mrfPreview = { name, data: null, error: "Preview response did not match the MRF schema.", loading: false };
+          this.mrfPreview = { name, status: "error", error: "Preview response did not match the MRF schema." };
         } else {
-          this.mrfPreview = { name, data: result.data, error: null, loading: false };
+          this.mrfPreview = { name, status: "success", data: result.data };
         }
       });
     } catch {
       runInAction(() => {
-        this.mrfPreview = { name, data: null, error: "Failed to load file content.", loading: false };
+        this.mrfPreview = { name, status: "error", error: "Failed to load file content." };
       });
     }
   };
 
   // Submission actions
   submitApproval = async (claims: ValidClaim[]): Promise<void> => {
-    this.isSubmitting = true;
-    this.resetSubmission();
+    this.submission = { status: "submitting" };
     try {
       const res = await rpc.api.mrf.generate.$post({ json: claims });
       if (!res.ok) {
         const status: number = res.status;
         if (status === 401) {
-          this.submitError = "You must be signed in to approve claims.";
+          this.submission = { status: "error", message: "You must be signed in to approve claims." };
           return;
         }
         try {
@@ -339,17 +331,15 @@ class AppStore {
             const field = issue.path.length > 0 ? `${FIELD_LIST_FORMATTER.format(issue.path.map(String))}: ` : "";
             return `${field}${issue.message}`;
           });
-          this.submitError = `Request failed: ${FIELD_LIST_FORMATTER.format(messages)}`;
+          this.submission = { status: "error", message: `Request failed: ${FIELD_LIST_FORMATTER.format(messages)}` };
         } catch {
-          this.submitError = `Request failed (${status}).`;
+          this.submission = { status: "error", message: `Request failed (${status}).` };
         }
         return;
       }
-      this.submitSuccess = true;
+      this.submission = { status: "success" };
     } catch {
-      this.submitError = "Network error — could not reach the server.";
-    } finally {
-      this.isSubmitting = false;
+      this.submission = { status: "error", message: "Network error — could not reach the server." };
     }
   };
 }

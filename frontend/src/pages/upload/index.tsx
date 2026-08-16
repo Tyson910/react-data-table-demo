@@ -200,7 +200,7 @@ const UploadPage = observer(() => {
           }}
           accept={ACCEPTED_MIME}
           maxFiles={1}
-          loading={store.isSubmitting}
+          loading={store.submission.status === "submitting"}
           radius="xl"
           p={hasFile ? "xs" : "xl"}
           className="border-2"
@@ -292,15 +292,15 @@ const UploadPage = observer(() => {
 
       {store.hasData && store.invalidRows.length > 0 && store.showErrors && <ValidationErrorsAlert gridRef={gridRef} />}
 
-      {store.submitSuccess && (
+      {store.submission.status === "success" && (
         <Alert color="green" title="Submitted successfully" icon={<IconCircleCheck size={18} />}>
           {selectedCount} claim{selectedCount !== 1 ? "s" : ""} sent for MRF generation.
         </Alert>
       )}
 
-      {store.submitError && (
-        <Alert color="red" title="Submission failed" icon={<IconAlertTriangle size={18} />} withCloseButton onClose={store.clearSubmitError}>
-          {store.submitError}
+      {store.submission.status === "error" && (
+        <Alert color="red" title="Submission failed" icon={<IconAlertTriangle size={18} />} withCloseButton onClose={store.resetSubmission}>
+          {store.submission.message}
         </Alert>
       )}
 
@@ -333,13 +333,13 @@ const UploadPage = observer(() => {
               <ColumnToggle gridRef={gridRef} />
               <Menu shadow="md" width={220} position="bottom-end" disabled={selectedCount === 0}>
                 <Menu.Target>
-                  <Button rightSection={<IconChevronDown size={14} />} disabled={selectedCount === 0} loading={store.isSubmitting}>
+                  <Button rightSection={<IconChevronDown size={14} />} disabled={selectedCount === 0} loading={store.submission.status === "submitting"}>
                     Actions {selectedCount > 0 ? `(${selectedCount})` : ""}
                   </Button>
                 </Menu.Target>
                 <Menu.Dropdown>
                   <Menu.Label>Selected rows</Menu.Label>
-                  <Menu.Item leftSection={<IconCircleCheck size={14} />} onClick={handleApprove} disabled={store.isSubmitting}>
+                  <Menu.Item leftSection={<IconCircleCheck size={14} />} onClick={handleApprove} disabled={store.submission.status === "submitting"}>
                     Approve selected
                   </Menu.Item>
                   <Menu.Divider />
