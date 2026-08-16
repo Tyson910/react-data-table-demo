@@ -1,15 +1,11 @@
-import type { RefObject } from "react";
 import type {
   CellValueChangedEvent,
-  ColDef,
   GetRowIdParams,
-  IRowNode,
   RowDataUpdatedEvent,
   RowSelectionOptions,
   SelectionChangedEvent,
-  ValueFormatterParams,
 } from "ag-grid-community";
-import type { DisplayRow, InvalidRow } from "../../stores/store.ts";
+import type { DisplayRow } from "../../stores/store.ts";
 
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -17,9 +13,9 @@ import { observer } from "mobx-react-lite";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from "ag-grid-community";
 import { Dropzone } from "@mantine/dropzone";
-import { Alert, Badge, Box, Button, Checkbox, Group, Menu, Modal, Popover, ScrollArea, Stack, Text, ThemeIcon, Title, Tooltip, UnstyledButton } from "@mantine/core";
+import { Alert, Badge, Box, Button, Group, Menu, Modal, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
 import { store } from "../../stores/store.ts";
-import { claimSchema, type ValidClaim } from "@mano/validators";
+import type { ValidClaim } from "@mano/validators";
 import {
   IconAlertTriangle,
   IconArrowRight,
@@ -27,11 +23,13 @@ import {
   IconChevronDown,
   IconCircleCheck,
   IconCloudUpload,
-  IconColumns,
   IconFile,
   IconTrash,
   IconX,
 } from "../../components/Icons.tsx";
+import { ColumnToggle } from "./ColumnToggle.tsx";
+import { ValidationErrorsAlert } from "./ValidationErrorsAlert.tsx";
+import { COL_DEFS } from "./columns.ts";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -42,110 +40,8 @@ const ROW_SELECTION: RowSelectionOptions<DisplayRow> = {
   checkboxes: true,
   headerCheckbox: true,
   enableClickSelection: false,
-  isRowSelectable: (node: IRowNode<DisplayRow>) => node.data?.isValid ?? false,
+  isRowSelectable: (node) => node.data?.isValid ?? false,
 };
-
-const moneyFormatter = (p: ValueFormatterParams): string => {
-  const v: unknown = p.value;
-  if (typeof v !== "string" || !v) return "";
-  return `$${parseFloat(v).toFixed(2)}`;
-};
-
-const dateFormatter = (p: ValueFormatterParams): string => {
-  const v: unknown = p.value;
-  if (typeof v !== "string" || !v) return "";
-  const d = new Date(v);
-  return isNaN(d.getTime()) ? v : d.toLocaleDateString();
-};
-
-const COL_DEFS: ColDef<DisplayRow>[] = [
-  { field: "Claim ID", minWidth: 160, pinned: "left", editable: false },
-  { field: "Subscriber ID", minWidth: 140 },
-  {
-    field: "Claim Status",
-    minWidth: 130,
-    cellEditor: "agSelectCellEditor",
-    cellEditorParams: { values: claimSchema.shape["Claim Status"].options },
-  },
-  { field: "Billed", minWidth: 110, valueFormatter: moneyFormatter },
-  { field: "Allowed", minWidth: 110, valueFormatter: moneyFormatter },
-  { field: "Paid", minWidth: 110, valueFormatter: moneyFormatter },
-  { field: "Provider Name", minWidth: 180, flex: 1 },
-  { field: "Service Date", minWidth: 130, valueFormatter: dateFormatter },
-  { field: "Member Sequence", minWidth: 160, hide: true },
-  { field: "Payment Status Date", minWidth: 180, hide: true, valueFormatter: dateFormatter },
-  { field: "Received Date", minWidth: 140, hide: true, valueFormatter: dateFormatter },
-  { field: "Entry Date", minWidth: 130, hide: true, valueFormatter: dateFormatter },
-  { field: "Processed Date", minWidth: 150, hide: true, valueFormatter: dateFormatter },
-  { field: "Paid Date", minWidth: 120, hide: true, valueFormatter: dateFormatter },
-  { field: "Payment Status", minWidth: 150, hide: true },
-  { field: "Group Name", minWidth: 180, hide: true },
-  { field: "Group ID", minWidth: 120, hide: true },
-  { field: "Division Name", minWidth: 150, hide: true },
-  { field: "Division ID", minWidth: 130, hide: true },
-  { field: "Plan", minWidth: 180, hide: true },
-  { field: "Plan ID", minWidth: 120, hide: true },
-  {
-    field: "Place of Service",
-    minWidth: 200,
-    hide: true,
-    cellEditor: "agSelectCellEditor",
-    cellEditorParams: { values: claimSchema.shape["Place of Service"].options },
-  },
-  {
-    field: "Claim Type",
-    minWidth: 140,
-    hide: true,
-    cellEditor: "agSelectCellEditor",
-    cellEditorParams: { values: claimSchema.shape["Claim Type"].options },
-  },
-  { field: "Procedure Code", minWidth: 150, hide: true },
-  {
-    field: "Member Gender",
-    minWidth: 140,
-    hide: true,
-    cellEditor: "agSelectCellEditor",
-    cellEditorParams: { values: claimSchema.shape["Member Gender"].options },
-  },
-  { field: "Provider ID", minWidth: 130, hide: true },
-];
-
-const ALL_COLUMNS: string[] = COL_DEFS.flatMap((c) => (c.field != null ? [c.field] : []));
-const DEFAULT_VISIBLE: Set<string> = new Set(COL_DEFS.filter((c) => !c.hide).flatMap((c) => (c.field != null ? [c.field] : [])));
-
-function ColumnToggle({ gridRef }: { gridRef: RefObject<AgGridReact<DisplayRow> | null> }) {
-  const [visible, setVisible] = useState<string[]>(() => [...DEFAULT_VISIBLE]);
-
-  function handleChange(next: string[]) {
-    setVisible(next);
-    const api = gridRef.current?.api;
-    if (!api) return;
-    api.applyColumnState({
-      state: ALL_COLUMNS.map((col) => ({ colId: col, hide: !next.includes(col) })),
-    });
-  }
-
-  return (
-    <Popover position="bottom-end" shadow="md" width={260}>
-      <Popover.Target>
-        <Button variant="default" size="xs" leftSection={<IconColumns size={14} />}>
-          Columns ({visible.length}/{ALL_COLUMNS.length})
-        </Button>
-      </Popover.Target>
-      <Popover.Dropdown p="xs">
-        <ScrollArea.Autosize mah={320}>
-          <Checkbox.Group value={visible} onChange={handleChange}>
-            <Stack gap={6} p={4}>
-              {ALL_COLUMNS.map((col) => (
-                <Checkbox key={col} value={col} label={col} size="sm" />
-              ))}
-            </Stack>
-          </Checkbox.Group>
-        </ScrollArea.Autosize>
-      </Popover.Dropdown>
-    </Popover>
-  );
-}
 
 function getRowId(params: GetRowIdParams<DisplayRow>) {
   return params.data.id;
@@ -176,110 +72,11 @@ function FlowStep({ n, label }: { n: number; label: string }) {
   );
 }
 
-const ERROR_PREVIEW_COUNT = 5;
-
-function jumpToRow(gridRef: RefObject<AgGridReact<DisplayRow> | null>, id: string) {
-  const api = gridRef.current?.api;
-  const node = api?.getRowNode(id);
-  if (!api || !node || node.rowIndex == null) return;
-  api.ensureIndexVisible(node.rowIndex, "middle");
-  api.setFocusedCell(node.rowIndex, "Claim ID");
-  api.flashCells({ rowNodes: [node] });
-}
-
-function ErrorRowEntry({ row, onJump }: { row: InvalidRow; onJump: () => void }) {
-  const [first, ...rest] = row.errors;
-  return (
-    <Tooltip
-      label={
-        <Text>
-          {row.errors.map((error, index) => (
-            <span key={`${error.field}-${index}`}>
-              {index > 0 && <br />}
-              {error.field}: {error.message}
-            </span>
-          ))}
-        </Text>
-      }
-      multiline
-      maw={360}
-    >
-      <UnstyledButton onClick={onJump} className="block w-full rounded px-1.5 py-0.5 text-left hover:bg-orange-100">
-        <Group gap="xs" wrap="nowrap">
-          <Text size="sm" fw={600} miw={72}>
-            Row {row.rowIndex}
-          </Text>
-          <Text size="sm" lineClamp={1}>
-            {first ? `${first.field}: ${first.message}` : "Invalid row"}
-            {rest.length > 0 ? ` (+${rest.length} more)` : ""}
-          </Text>
-        </Group>
-      </UnstyledButton>
-    </Tooltip>
-  );
-}
-
-const ValidationErrorsAlert = observer(({ gridRef }: { gridRef: RefObject<AgGridReact<DisplayRow> | null> }) => {
-  const [expanded, setExpanded] = useState(false);
-  const rows = store.invalidRows;
-
-  // Per-field failure counts (a row counts once per field, even with multiple issues on it)
-  const byField = rows
-    .flatMap(({ errors, rowIndex }) => errors.map(({ field }) => ({ field, rowIndex })))
-    .reduce<Record<string, Set<number>>>((acc, { field, rowIndex }) => {
-      (acc[field] ??= new Set()).add(rowIndex);
-      return acc;
-    }, {});
-
-  const summary = Object.entries(byField)
-    .map(([field, lines]) => ({ field, count: lines.size }))
-    .sort((a, b) => b.count - a.count);
-
-  const shown = expanded ? rows : rows.slice(0, ERROR_PREVIEW_COUNT);
-
-  return (
-    <Alert
-      color="orange"
-      title={`${rows.length} row${rows.length !== 1 ? "s" : ""} failed validation`}
-      icon={<IconAlertTriangle size={18} />}
-      withCloseButton
-      onClose={() => store.dismissErrors()}
-    >
-      <Stack gap="xs">
-        <Text size="xs" c="dimmed">
-          Click a row to jump to it in the table. Hover for full error details.
-        </Text>
-        <Group gap={6}>
-          {summary.map((s) => (
-            <Badge key={s.field} color="orange" variant="light" size="sm">
-              {s.field} · {s.count}
-            </Badge>
-          ))}
-        </Group>
-        <Stack gap={2}>
-          {shown.map((row) => (
-            <ErrorRowEntry key={row.id} row={row} onJump={() => jumpToRow(gridRef, row.id)} />
-          ))}
-        </Stack>
-        {rows.length > ERROR_PREVIEW_COUNT && (
-          <Button variant="subtle" color="orange" size="compact-xs" onClick={() => setExpanded((v) => !v)} style={{ alignSelf: "flex-start" }}>
-            {expanded ? "Show fewer rows" : `Show all ${rows.length} rows`}
-          </Button>
-        )}
-      </Stack>
-    </Alert>
-  );
-});
-
 const UploadPage = observer(() => {
   const gridRef = useRef<AgGridReact<DisplayRow>>(null);
   const navigate = useNavigate();
   const [selectedCount, setSelectedCount] = useState(0);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  /**
-   * The grid reads the filter via callbacks, so the ref keeps the source of truth
-   * synchronous — setState alone would race the onFilterChanged() call below.
-   */
   const [invalidOnly, setInvalidOnly] = useState(false);
   const invalidOnlyRef = useRef(false);
 
@@ -289,17 +86,11 @@ const UploadPage = observer(() => {
     gridRef.current?.api.onFilterChanged();
   }
 
-  /**
-   * MobX observable arrays are a stable Proxy — same reference forever, even as items change.
-   * AG Grid only re-renders when it sees a new array reference, so we spread into a fresh one.
-   */
   const rowData = [...store.displayRows];
 
   const hasFile = store.fileName !== "";
 
   function onRowDataUpdated(event: RowDataUpdatedEvent<DisplayRow>) {
-    // Only auto-select rows that pass the active filter, so hidden valid rows are
-    // never silently approved while the invalid-only filter is on
     event.api.forEachNodeAfterFilterAndSort((node) => {
       if (node.data?.isValid) node.setSelected(true);
     });
@@ -361,7 +152,6 @@ const UploadPage = observer(() => {
         </Text>
       </div>
 
-      {/* Workflow hint — only shown before the first upload */}
       <Group justify="center" gap="sm">
         <FlowStep n={1} label="Upload CSV" />
         <IconArrowRight size={14} />
@@ -370,7 +160,6 @@ const UploadPage = observer(() => {
         <FlowStep n={3} label="Approve" />
       </Group>
 
-      {/* Dropzone — hero when empty, slim file bar once a file is loaded */}
       <div className="rounded-2xl bg-green-50/70 p-1.5 ring-1 ring-green-100">
         <Dropzone
           onDrop={(files) => {
@@ -460,31 +249,26 @@ const UploadPage = observer(() => {
         </Dropzone>
       </div>
 
-      {/* File format error */}
       {store.fileError && (
         <Alert color="red" title="Invalid file" icon={<IconAlertTriangle size={18} />} withCloseButton onClose={() => store.clearFile()}>
           {store.fileError}
         </Alert>
       )}
 
-      {/* Validation errors */}
       {store.hasData && store.invalidRows.length > 0 && store.showErrors && <ValidationErrorsAlert gridRef={gridRef} />}
 
-      {/* Success */}
       {store.submitSuccess && (
         <Alert color="green" title="Submitted successfully" icon={<IconCircleCheck size={18} />}>
           {selectedCount} claim{selectedCount !== 1 ? "s" : ""} sent for MRF generation.
         </Alert>
       )}
 
-      {/* Submission error */}
       {store.submitError && (
         <Alert color="red" title="Submission failed" icon={<IconAlertTriangle size={18} />} withCloseButton onClose={store.clearSubmitError}>
           {store.submitError}
         </Alert>
       )}
 
-      {/* Claims table */}
       {store.hasData && (
         <Stack gap="sm" style={{ flex: 1 }}>
           <Group justify="space-between" align="center">

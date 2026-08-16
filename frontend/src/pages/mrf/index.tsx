@@ -3,7 +3,8 @@ import { useLoaderData } from "react-router-dom";
 import { Alert, Anchor, Badge, Button, Code, Group, Modal, ScrollArea, Stack, Table, Text, Title } from "@mantine/core";
 import * as z from "zod";
 import { rpc } from "../../lib/api.ts";
-import { IconDownload, IconFileCode } from "../../components/Icons.tsx";
+import { IconDownload, IconEye, IconFileCode } from "../../components/Icons.tsx";
+import { formatBytes, formatDate } from "../../lib/format.ts";
 import { parseResponse } from "hono/client";
 
 const mrfFileMetaSchema = z.object({
@@ -18,19 +19,6 @@ const mrfFileMetaSchema = z.object({
 });
 
 type MrfFileMeta = z.infer<typeof mrfFileMetaSchema>;
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const kb = bytes / 1024;
-  if (kb < 1024) return `${kb.toFixed(1)} KB`;
-  return `${(kb / 1024).toFixed(1)} MB`;
-}
-
-function formatDate(iso: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return isNaN(d.getTime()) ? iso : d.toLocaleDateString();
-}
 
 export async function mrfFilesLoader(): Promise<MrfFileMeta[]> {
   const data = await parseResponse(rpc.api.mrf.files.$get());
@@ -67,13 +55,6 @@ function PreviewModal({ name, content, opened, onClose }: { name: string; conten
     </Modal>
   );
 }
-
-const IconEye = ({ size = 24 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
-    <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
-  </svg>
-);
 
 export default function MrfFilesPage() {
   const files = z.array(mrfFileMetaSchema).parse(useLoaderData());
