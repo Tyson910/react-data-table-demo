@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet, Link } from "react-router-dom";
+import { Outlet, Link, useLocation } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Button, Group, Text } from "@mantine/core";
 import UserSwitchModal from "../components/UserSwitchModal.tsx";
@@ -7,6 +7,7 @@ import { store } from "../stores/store.ts";
 
 const BasicLayout = observer(() => {
   const [switchUserOpen, setSwitchUserOpen] = useState(false);
+  const { pathname } = useLocation();
 
   return (
     <div className="flex h-screen w-full flex-col">
@@ -16,7 +17,10 @@ const BasicLayout = observer(() => {
           <Text fw={700} size="sm" c="royalGreen.5" component={Link} to="/" className="no-underline">
             MRF Generator
           </Text>
-          <Button size="xs" variant="subtle" color="gray" component={Link} to="/mrf">
+          <Button size="xs" variant={pathname === "/upload" ? "light" : "subtle"} color={pathname === "/upload" ? "royalGreen" : "gray"} component={Link} to="/upload">
+            Upload
+          </Button>
+          <Button size="xs" variant={pathname === "/mrf" ? "light" : "subtle"} color={pathname === "/mrf" ? "royalGreen" : "gray"} component={Link} to="/mrf">
             MRF Files
           </Button>
         </Group>
