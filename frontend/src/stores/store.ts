@@ -20,6 +20,7 @@ type RowRecord = {
 };
 
 export type InvalidRow = {
+  id: string;
   rowIndex: number;
   raw: CsvRow;
   errors: ValidationError[];
@@ -173,7 +174,7 @@ class AppStore {
   }
 
   get invalidRows(): InvalidRow[] {
-    return this.allRows.filter((r) => !r.isValid).map((r) => ({ rowIndex: r.rowIndex, raw: r.raw, errors: r.errors }));
+    return this.allRows.filter((r) => !r.isValid).map((r) => ({ id: r.id, rowIndex: r.rowIndex, raw: r.raw, errors: r.errors }));
   }
 
   get displayRows(): DisplayRow[] {
@@ -224,6 +225,10 @@ class AppStore {
 
   dismissErrors = (): void => {
     this.showErrors = false;
+  };
+
+  toggleErrors = (): void => {
+    this.showErrors = !this.showErrors;
   };
 
   clearFile = (): void => {

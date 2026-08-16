@@ -9,6 +9,7 @@ import type {
   SelectionChangedEvent,
   ValueFormatterParams,
 } from "ag-grid-community";
+import type { DisplayRow, InvalidRow } from "../../stores/store.ts";
 
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -16,9 +17,8 @@ import { observer } from "mobx-react-lite";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from "ag-grid-community";
 import { Dropzone } from "@mantine/dropzone";
-import { Alert, Badge, Box, Button, Checkbox, Group, Menu, Modal, Popover, ScrollArea, Stack, Text, ThemeIcon, Title, Tooltip } from "@mantine/core";
+import { Alert, Badge, Box, Button, Checkbox, Group, Menu, Modal, Popover, ScrollArea, Stack, Text, ThemeIcon, Title, Tooltip, UnstyledButton } from "@mantine/core";
 import { store } from "../../stores/store.ts";
-import type { DisplayRow } from "../../stores/store.ts";
 import { type ValidClaim, claimSchema } from "../../utils/claims.schema.ts";
 import {
   IconAlertTriangle,
@@ -177,22 +177,106 @@ function FlowStep({ n, label }: { n: number; label: string }) {
   );
 }
 
-function ErrorTooltip({ errors }: { errors: { field: string; message: string }[] }) {
-  const label = errors.map((e) => `${e.field}: ${e.message}`).join("\n");
+const ERROR_PREVIEW_COUNT = 5;
+
+function jumpToRow(gridRef: RefObject<AgGridReact<DisplayRow> | null>, id: string) {
+  const api = gridRef.current?.api;
+  const node = api?.getRowNode(id);
+  if (!api || !node || node.rowIndex == null) return;
+  api.ensureIndexVisible(node.rowIndex, "middle");
+  api.setFocusedCell(node.rowIndex, "Claim ID");
+  api.flashCells({ rowNodes: [node] });
+}
+
+function ErrorRowEntry({ row, onJump }: { row: InvalidRow; onJump: () => void }) {
+  const [first, ...rest] = row.errors;
+  const tooltip = row.errors.map((e) => `${e.field}: ${e.message}`).join("\n");
   return (
-    <Tooltip label={<Text style={{ whiteSpace: "pre-line" }}>{label}</Text>} multiline maw={320}>
-      <Badge color="red" variant="light" style={{ cursor: "help" }}>
-        {errors.length} error{errors.length !== 1 ? "s" : ""}
-      </Badge>
+    <Tooltip label={<Text style={{ whiteSpace: "pre-line" }}>{tooltip}</Text>} multiline maw={360}>
+      <UnstyledButton onClick={onJump} className="block w-full rounded px-1.5 py-0.5 text-left hover:bg-orange-100">
+        <Group gap="xs" wrap="nowrap">
+          <Text size="sm" fw={600} miw={72}>
+            Row {row.rowIndex}
+          </Text>
+          <Text size="sm" lineClamp={1}>
+            {first ? `${first.field}: ${first.message}` : "Invalid row"}
+            {rest.length > 0 ? ` (+${rest.length} more)` : ""}
+          </Text>
+        </Group>
+      </UnstyledButton>
     </Tooltip>
   );
 }
+
+const ValidationErrorsAlert = observer(({ gridRef }: { gridRef: RefObject<AgGridReact<DisplayRow> | null> }) => {
+  const [expanded, setExpanded] = useState(false);
+  const rows = store.invalidRows;
+
+  // Per-field failure counts (a row counts once per field, even with multiple issues on it)
+  const byField = rows
+    .flatMap(({ errors, rowIndex }) => errors.map(({ field }) => ({ field, rowIndex })))
+    .reduce<Record<string, Set<number>>>((acc, { field, rowIndex }) => {
+      (acc[field] ??= new Set()).add(rowIndex);
+      return acc;
+    }, {});
+
+  const summary = Object.entries(byField)
+    .map(([field, lines]) => ({ field, count: lines.size }))
+    .sort((a, b) => b.count - a.count);
+    
+  const shown = expanded ? rows : rows.slice(0, ERROR_PREVIEW_COUNT);
+
+  return (
+    <Alert
+      color="orange"
+      title={`${rows.length} row${rows.length !== 1 ? "s" : ""} failed validation`}
+      icon={<IconAlertTriangle size={18} />}
+      withCloseButton
+      onClose={() => store.dismissErrors()}
+    >
+      <Stack gap="xs">
+        <Text size="xs" c="dimmed">
+          Click a row to jump to it in the table. Hover for full error details.
+        </Text>
+        <Group gap={6}>
+          {summary.map((s) => (
+            <Badge key={s.field} color="orange" variant="light" size="sm">
+              {s.field} · {s.count}
+            </Badge>
+          ))}
+        </Group>
+        <Stack gap={2}>
+          {shown.map((row) => (
+            <ErrorRowEntry key={row.id} row={row} onJump={() => jumpToRow(gridRef, row.id)} />
+          ))}
+        </Stack>
+        {rows.length > ERROR_PREVIEW_COUNT && (
+          <Button variant="subtle" color="orange" size="compact-xs" onClick={() => setExpanded((v) => !v)} style={{ alignSelf: "flex-start" }}>
+            {expanded ? "Show fewer rows" : `Show all ${rows.length} rows`}
+          </Button>
+        )}
+      </Stack>
+    </Alert>
+  );
+});
 
 const UploadPage = observer(() => {
   const gridRef = useRef<AgGridReact<DisplayRow>>(null);
   const navigate = useNavigate();
   const [selectedCount, setSelectedCount] = useState(0);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  /**
+   * The grid reads the filter via callbacks, so the ref keeps the source of truth
+   * synchronous — setState alone would race the onFilterChanged() call below.
+   */
+  const [invalidOnly, setInvalidOnly] = useState(false);
+  const invalidOnlyRef = useRef(false);
+
+  function toggleInvalidOnly() {
+    invalidOnlyRef.current = !invalidOnlyRef.current;
+    setInvalidOnly(invalidOnlyRef.current);
+    gridRef.current?.api.onFilterChanged();
+  }
 
   /**
    * MobX observable arrays are a stable Proxy — same reference forever, even as items change.
@@ -203,7 +287,9 @@ const UploadPage = observer(() => {
   const hasFile = store.fileName !== "";
 
   function onRowDataUpdated(event: RowDataUpdatedEvent<DisplayRow>) {
-    event.api.forEachNode((node) => {
+    // Only auto-select rows that pass the active filter, so hidden valid rows are
+    // never silently approved while the invalid-only filter is on
+    event.api.forEachNodeAfterFilterAndSort((node) => {
       if (node.data?.isValid) node.setSelected(true);
     });
     setSelectedCount(event.api.getSelectedRows().length);
@@ -371,24 +457,7 @@ const UploadPage = observer(() => {
       )}
 
       {/* Validation errors */}
-      {store.hasData && store.invalidRows.length > 0 && store.showErrors && (
-        <Alert
-          color="orange"
-          title={`${store.invalidRows.length} row${store.invalidRows.length !== 1 ? "s" : ""} failed validation`}
-          icon={<IconAlertTriangle size={18} />}
-          withCloseButton
-          onClose={() => store.dismissErrors()}
-        >
-          <Stack gap={4}>
-            {store.invalidRows.map((row) => (
-              <Group key={row.rowIndex} gap="xs">
-                <Text size="sm">Row {row.rowIndex}:</Text>
-                <ErrorTooltip errors={row.errors} />
-              </Group>
-            ))}
-          </Stack>
-        </Alert>
-      )}
+      {store.hasData && store.invalidRows.length > 0 && store.showErrors && <ValidationErrorsAlert gridRef={gridRef} />}
 
       {/* Success */}
       {store.submitSuccess && (
@@ -406,12 +475,24 @@ const UploadPage = observer(() => {
                 {store.validClaims.length} valid
               </Badge>
               {store.invalidRows.length > 0 && (
-                <Badge size="lg" variant="light" color="orange" leftSection={<IconAlertTriangle size={12} />}>
-                  {store.invalidRows.length} invalid — not selectable
-                </Badge>
+                <Tooltip label={store.showErrors ? "Hide error details" : "Show error details"}>
+                  <Badge size="lg" variant="light" color="orange" leftSection={<IconAlertTriangle size={12} />} style={{ cursor: "pointer" }} onClick={() => store.toggleErrors()}>
+                    {store.invalidRows.length} invalid — not selectable
+                  </Badge>
+                </Tooltip>
               )}
             </Group>
             <Group gap="xs">
+              <Button
+                size="xs"
+                variant={invalidOnly ? "light" : "default"}
+                color="orange"
+                leftSection={<IconAlertTriangle size={14} />}
+                disabled={store.invalidRows.length === 0}
+                onClick={toggleInvalidOnly}
+              >
+                Invalid only
+              </Button>
               <ColumnToggle gridRef={gridRef} />
               <Menu shadow="md" width={220} position="bottom-end" disabled={selectedCount === 0}>
                 <Menu.Target>
@@ -442,6 +523,8 @@ const UploadPage = observer(() => {
               getRowId={getRowId}
               rowSelection={ROW_SELECTION}
               getRowStyle={getRowStyle}
+              isExternalFilterPresent={() => invalidOnlyRef.current && store.invalidRows.length > 0}
+              doesExternalFilterPass={(node) => node.data?.isValid === false}
               onRowDataUpdated={onRowDataUpdated}
               onSelectionChanged={onSelectionChanged}
               defaultColDef={{ sortable: true, resizable: true, filter: true, editable: true }}
