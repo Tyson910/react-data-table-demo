@@ -1,10 +1,12 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import BasicLayout from "./layout/BasicLayout";
 import NotFoundPage from "./pages/error/NotFound";
 import MainPage from "./pages/index";
-import UploadPage from "./pages/upload/index";
-import LoginPage from "./pages/login/index";
-import MrfFilesPage, { mrfFilesLoader } from "./pages/mrf/index";
+
+const UploadPage = lazy(() => import("./pages/upload/index"));
+const LoginPage = lazy(() => import("./pages/login/index"));
+const MrfFilesPage = lazy(() => import("./pages/mrf/index"));
 
 const router = createBrowserRouter([
   {
@@ -16,16 +18,28 @@ const router = createBrowserRouter([
       },
       {
         path: "/upload",
-        element: <UploadPage />,
+        element: (
+          <Suspense>
+            <UploadPage />
+          </Suspense>
+        ),
       },
       {
         path: "/login",
-        element: <LoginPage />,
+        element: (
+          <Suspense>
+            <LoginPage />
+          </Suspense>
+        ),
       },
       {
         path: "/mrf",
-        element: <MrfFilesPage />,
-        loader: mrfFilesLoader,
+        element: (
+          <Suspense>
+            <MrfFilesPage />
+          </Suspense>
+        ),
+        loader: () => import("./pages/mrf/index").then((m) => m.mrfFilesLoader()),
       },
     ],
     errorElement: <NotFoundPage />,
