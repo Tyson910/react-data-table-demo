@@ -32,13 +32,13 @@ function getRowId(params: GetRowIdParams<DisplayRow>) {
 }
 
 function getRowClass(params: { data?: DisplayRow }) {
-  return params.data?.isValid ? undefined : "bg-red-50 text-red-700 border-l-4 border-red-500";
+  return params.data?.isValid ? undefined : "bg-red-50/70";
 }
 
 const gridTheme = themeQuartz.withParams({
   accentColor: "#004502",
-  headerBackgroundColor: "#f8faf8",
-  rowHoverColor: "#f0f7f0",
+  headerBackgroundColor: "#f9fafb",
+  rowHoverColor: "#f3f4f6",
 });
 
 type StepState = "todo" | "active" | "done" | "loading";
@@ -99,7 +99,7 @@ const UploadPage = observer(() => {
         if (params.data.isValid) {
           return (
             <button
-              className="cursor-pointer rounded bg-green-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-green-700"
+              className="cursor-pointer rounded bg-primary px-2 py-0.5 text-xs font-medium text-white transition-colors hover:bg-primary/90"
               onClick={() => params.data && approveRow(params.data)}
             >
               Approve
@@ -108,7 +108,7 @@ const UploadPage = observer(() => {
         }
         return (
           <button
-            className="cursor-pointer rounded bg-red-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-red-700"
+            className="cursor-pointer rounded px-2 py-0.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-100"
             onClick={() => params.data && store.removeRows([params.data.id])}
           >
             Remove
@@ -173,41 +173,41 @@ const UploadPage = observer(() => {
   };
 
   return (
-    <Stack className="min-h-screen gap-6 bg-gray-50 p-6">
-      <Modal opened={authModalOpen} onClose={() => setAuthModalOpen(false)} title="Sign in required" centered size="sm">
-        <Stack gap="md">
-          <Text size="sm">You must be signed in to approve claims.</Text>
-          <Group justify="flex-end" gap="xs">
-            <Button variant="default" onClick={() => setAuthModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                setAuthModalOpen(false);
-                navigate("/login");
-              }}
-            >
-              Go to sign in
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
-      <div>
-        <Title order={2}>Claims Upload</Title>
-        <Text size="sm" c="dimmed" mt={4}>
-          Upload a claims CSV, review the parsed rows, then approve to generate MRF files.
-        </Text>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <Stack gap={24} className="p-6" maw={1200} mx="auto">
+        <Modal opened={authModalOpen} onClose={() => setAuthModalOpen(false)} title="Sign in required" centered size="sm">
+          <Stack gap="md">
+            <Text size="sm">You must be signed in to approve claims.</Text>
+            <Group justify="flex-end" gap="xs">
+              <Button variant="default" onClick={() => setAuthModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  setAuthModalOpen(false);
+                  navigate("/login");
+                }}
+              >
+                Go to sign in
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
+        <div>
+          <Title order={2}>Claims Upload</Title>
+          <Text size="sm" c="dimmed" mt={4}>
+            Upload a claims CSV, review the parsed rows, then approve to generate MRF files.
+          </Text>
+        </div>
 
-      <Group justify="center" gap="sm">
-        <FlowStep n={1} label="Upload CSV" state={uploadStep} />
-        <IconArrowRight size={14} />
-        <FlowStep n={2} label="Review rows" state={reviewStep} />
-        <IconArrowRight size={14} />
-        <FlowStep n={3} label="Approve" state={approveStep} />
-      </Group>
+        <Group justify="center" gap="sm">
+          <FlowStep n={1} label="Upload CSV" state={uploadStep} />
+          <IconArrowRight size={14} />
+          <FlowStep n={2} label="Review rows" state={reviewStep} />
+          <IconArrowRight size={14} />
+          <FlowStep n={3} label="Approve" state={approveStep} />
+        </Group>
 
-      <div className="rounded-2xl bg-green-50/70 p-1.5 ring-1 ring-green-100">
         <Dropzone
           onDrop={(files) => {
             const file = files[0];
@@ -219,14 +219,14 @@ const UploadPage = observer(() => {
           accept={ACCEPTED_MIME}
           maxFiles={1}
           loading={store.isParsing || store.submission.status === "submitting"}
-          radius="xl"
+          radius="md"
           p={hasFile ? "xs" : "xl"}
           className="border-2"
         >
           {hasFile ? (
             <Group justify="space-between" wrap="nowrap" px="sm" py={4}>
               <Group gap="sm" wrap="nowrap">
-                <ThemeIcon size="lg" radius="md" variant="light" color="green">
+                <ThemeIcon size="lg" radius="md" variant="light" color="royalGreen">
                   <IconFile size={18} />
                 </ThemeIcon>
                 <div>
@@ -255,28 +255,28 @@ const UploadPage = observer(() => {
             <div className="pointer-events-none flex min-h-[300px] items-center justify-center">
               <Dropzone.Accept>
                 <Stack align="center" gap="md">
-                  <ThemeIcon size={84} radius="xl" color="green">
-                    <IconCheck size={42} />
+                  <ThemeIcon size={56} radius="xl" variant="light" color="royalGreen">
+                    <IconCheck size={28} />
                   </ThemeIcon>
-                  <Text size="xl" fw={700} c="green.7">
-                    Drop it!
+                  <Text size="lg" fw={700} c="royalGreen.5">
+                    Drop to upload
                   </Text>
                 </Stack>
               </Dropzone.Accept>
               <Dropzone.Reject>
                 <Stack align="center" gap="md">
-                  <ThemeIcon size={84} radius="xl" color="red">
-                    <IconX size={42} />
+                  <ThemeIcon size={56} radius="xl" variant="light" color="red">
+                    <IconX size={28} />
                   </ThemeIcon>
-                  <Text size="xl" fw={700} c="red.7">
+                  <Text size="lg" fw={700} c="red.7">
                     CSV files only
                   </Text>
                 </Stack>
               </Dropzone.Reject>
               <Dropzone.Idle>
                 <Stack align="center" gap="lg">
-                  <ThemeIcon size={84} radius="xl" color="royalGreen">
-                    <IconCloudUpload size={42} />
+                  <ThemeIcon size={56} radius="xl" variant="light" color="royalGreen">
+                    <IconCloudUpload size={28} />
                   </ThemeIcon>
                   <Stack gap={4} align="center">
                     <Text size="xl" fw={700}>
@@ -294,135 +294,135 @@ const UploadPage = observer(() => {
             </div>
           )}
         </Dropzone>
-      </div>
 
-      {store.fileError && (
-        <Alert
-          color={store.hasData ? "orange" : "red"}
-          title={store.hasData ? "CSV warning" : "Invalid file"}
-          icon={<IconAlertTriangle size={18} />}
-          withCloseButton
-          onClose={store.hasData ? store.clearFileError : store.clearFile}
-        >
-          {store.fileError}
-        </Alert>
-      )}
+        {store.fileError && (
+          <Alert
+            color={store.hasData ? "orange" : "red"}
+            title={store.hasData ? "CSV warning" : "Invalid file"}
+            icon={<IconAlertTriangle size={18} />}
+            withCloseButton
+            onClose={store.hasData ? store.clearFileError : store.clearFile}
+          >
+            {store.fileError}
+          </Alert>
+        )}
 
-      {store.hasData && store.invalidRows.length > 0 && store.showErrors && <ValidationErrorsAlert gridRef={gridRef} />}
+        {store.hasData && store.invalidRows.length > 0 && store.showErrors && <ValidationErrorsAlert gridRef={gridRef} />}
 
-      {store.submission.status === "success" && (
-        <Alert color="green" title="Submitted successfully" icon={<IconCircleCheck size={18} />}>
-          <Group justify="space-between" wrap="nowrap" gap="xs">
-            <Text size="sm">
-              {selectedCount} claim{selectedCount !== 1 ? "s" : ""} sent for MRF generation.
-            </Text>
-            <Button component={Link} to="/mrf" size="xs" variant="light" color="green" rightSection={<IconArrowRight size={14} />}>
-              View generated files
-            </Button>
-          </Group>
-        </Alert>
-      )}
-
-      {store.submission.status === "error" && (
-        <Alert color="red" title="Submission failed" icon={<IconAlertTriangle size={18} />} withCloseButton onClose={store.resetSubmission}>
-          {store.submission.message}
-        </Alert>
-      )}
-
-      {store.isParsing && (
-        <Stack gap="sm" className="flex-1">
-          <Group justify="space-between">
-            <Skeleton height={26} radius={32} width={180} />
-            <Skeleton height={26} width={340} />
-          </Group>
-          <Skeleton height={520} radius="sm" />
-        </Stack>
-      )}
-
-      {store.hasData && (
-        <Stack gap="sm" className="flex-1">
-          <Group justify="space-between" align="center">
-            <Group gap="xs">
-              <Badge size="lg" variant="light" color="green" leftSection={<IconCheck size={12} />}>
-                {store.validClaims.length} valid
-              </Badge>
-              {store.invalidRows.length > 0 && (
-                <Tooltip label={store.showErrors ? "Hide error details" : "Show error details"}>
-                  <Badge size="lg" variant="light" color="orange" leftSection={<IconAlertTriangle size={12} />} className="cursor-pointer" onClick={() => store.toggleErrors()}>
-                    {store.invalidRows.length} invalid
-                  </Badge>
-                </Tooltip>
-              )}
-            </Group>
-            <Group gap="xs">
-              <Button
-                size="xs"
-                variant={invalidOnly ? "light" : "default"}
-                color="orange"
-                leftSection={<IconAlertTriangle size={14} />}
-                disabled={store.invalidRows.length === 0}
-                onClick={toggleInvalidOnly}
-              >
-                Invalid only
+        {store.submission.status === "success" && (
+          <Alert color="green" title="Submitted successfully" icon={<IconCircleCheck size={18} />}>
+            <Group justify="space-between" wrap="nowrap" gap="xs">
+              <Text size="sm">
+                {selectedCount} claim{selectedCount !== 1 ? "s" : ""} sent for MRF generation.
+              </Text>
+              <Button component={Link} to="/mrf" size="xs" variant="light" color="green" rightSection={<IconArrowRight size={14} />}>
+                View generated files
               </Button>
-              <ColumnToggle gridRef={gridRef} />
-              <Menu shadow="md" width={220} position="bottom-end" disabled={selectedCount === 0}>
-                <Menu.Target>
-                  <Button rightSection={<IconChevronDown size={14} />} disabled={selectedCount === 0} loading={store.submission.status === "submitting"}>
-                    Actions {selectedCount > 0 ? `(${selectedCount})` : ""}
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Label>Selected rows</Menu.Label>
-                  <Menu.Item leftSection={<IconCircleCheck size={14} />} onClick={handleApprove} disabled={store.submission.status === "submitting"}>
-                    Approve selected
-                  </Menu.Item>
-                  <Menu.Divider />
-                  <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={handleRemoveSelected}>
-                    Remove selected
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
             </Group>
-          </Group>
+          </Alert>
+        )}
 
-          <Box className="h-[520px]">
-            <AgGridReact<DisplayRow>
-              ref={gridRef}
-              theme={gridTheme}
-              rowData={rowData}
-              columnDefs={colDefs}
-              getRowId={getRowId}
-              rowSelection={ROW_SELECTION}
-              getRowClass={getRowClass}
-              isExternalFilterPresent={() => invalidOnlyRef.current && store.invalidRows.length > 0}
-              doesExternalFilterPass={(node) => node.data?.isValid === false}
-              onFirstDataRendered={onFirstDataRendered}
-              onSelectionChanged={onSelectionChanged}
-              enableBrowserTooltips
-              defaultColDef={{
-                sortable: true,
-                resizable: true,
-                filter: true,
-                editable: true,
-                cellClass: (params) => {
-                  if (!params.data || params.data.isValid) return undefined;
-                  return params.data.errors.some((e) => e.field === params.colDef.field) ? "bg-red-200/70 font-medium" : undefined;
-                },
-                tooltipValueGetter: (params) => {
-                  const colDef = params.colDef;
-                  if (!params.data || params.data.isValid || !colDef || !("field" in colDef)) return null;
-                  const field = colDef.field;
-                  const messages = params.data.errors.filter((e) => e.field === field).map((e) => e.message);
-                  return messages.length > 0 ? messages.join("\n") : null;
-                },
-              }}
-              onCellValueChanged={onCellValueChanged}
-            />
-          </Box>
-        </Stack>
-      )}
-    </Stack>
+        {store.submission.status === "error" && (
+          <Alert color="red" title="Submission failed" icon={<IconAlertTriangle size={18} />} withCloseButton onClose={store.resetSubmission}>
+            {store.submission.message}
+          </Alert>
+        )}
+
+        {store.isParsing && (
+          <Stack gap="sm" className="flex-1">
+            <Group justify="space-between">
+              <Skeleton height={26} radius={32} width={180} />
+              <Skeleton height={26} width={340} />
+            </Group>
+            <Skeleton height={520} radius="sm" />
+          </Stack>
+        )}
+
+        {store.hasData && (
+          <Stack gap="sm" className="flex-1">
+            <Group justify="space-between" align="center">
+              <Group gap="xs">
+                <Badge size="lg" variant="light" color="green" leftSection={<IconCheck size={12} />}>
+                  {store.validClaims.length} valid
+                </Badge>
+                {store.invalidRows.length > 0 && (
+                  <Tooltip label={store.showErrors ? "Hide error details" : "Show error details"}>
+                    <Badge size="lg" variant="light" color="orange" leftSection={<IconAlertTriangle size={12} />} className="cursor-pointer" onClick={() => store.toggleErrors()}>
+                      {store.invalidRows.length} invalid
+                    </Badge>
+                  </Tooltip>
+                )}
+              </Group>
+              <Group gap="xs">
+                <Button
+                  size="xs"
+                  variant={invalidOnly ? "light" : "default"}
+                  color="orange"
+                  leftSection={<IconAlertTriangle size={14} />}
+                  disabled={store.invalidRows.length === 0}
+                  onClick={toggleInvalidOnly}
+                >
+                  Invalid only
+                </Button>
+                <ColumnToggle gridRef={gridRef} />
+                <Menu shadow="md" width={220} position="bottom-end" disabled={selectedCount === 0}>
+                  <Menu.Target>
+                    <Button rightSection={<IconChevronDown size={14} />} disabled={selectedCount === 0} loading={store.submission.status === "submitting"}>
+                      Actions {selectedCount > 0 ? `(${selectedCount})` : ""}
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Label>Selected rows</Menu.Label>
+                    <Menu.Item leftSection={<IconCircleCheck size={14} />} onClick={handleApprove} disabled={store.submission.status === "submitting"}>
+                      Approve selected
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={handleRemoveSelected}>
+                      Remove selected
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </Group>
+            </Group>
+
+            <Box className="h-[520px]">
+              <AgGridReact<DisplayRow>
+                ref={gridRef}
+                theme={gridTheme}
+                rowData={rowData}
+                columnDefs={colDefs}
+                getRowId={getRowId}
+                rowSelection={ROW_SELECTION}
+                getRowClass={getRowClass}
+                isExternalFilterPresent={() => invalidOnlyRef.current && store.invalidRows.length > 0}
+                doesExternalFilterPass={(node) => node.data?.isValid === false}
+                onFirstDataRendered={onFirstDataRendered}
+                onSelectionChanged={onSelectionChanged}
+                enableBrowserTooltips
+                defaultColDef={{
+                  sortable: true,
+                  resizable: true,
+                  filter: true,
+                  editable: true,
+                  cellClass: (params) => {
+                    if (!params.data || params.data.isValid) return undefined;
+                    return params.data.errors.some((e) => e.field === params.colDef.field) ? "bg-red-100 font-medium" : undefined;
+                  },
+                  tooltipValueGetter: (params) => {
+                    const colDef = params.colDef;
+                    if (!params.data || params.data.isValid || !colDef || !("field" in colDef)) return null;
+                    const field = colDef.field;
+                    const messages = params.data.errors.filter((e) => e.field === field).map((e) => e.message);
+                    return messages.length > 0 ? messages.join("\n") : null;
+                  },
+                }}
+                onCellValueChanged={onCellValueChanged}
+              />
+            </Box>
+          </Stack>
+        )}
+      </Stack>
+    </div>
   );
 });
 

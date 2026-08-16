@@ -21,8 +21,6 @@
       "Open Sans",
       "Helvetica Neue",
       sans-serif !important;
-    font-feature-settings: "kern" !important;
     -webkit-font-smoothing: antialiased;
-    letter-spacing: -0.5px;
   }
 }

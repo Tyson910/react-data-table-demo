@@ -31,7 +31,7 @@ const LoginPage = observer(() => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <Card shadow="sm" padding="xl" radius="md" withBorder w={420}>
+      <Card shadow="xs" padding="xl" radius="md" withBorder w={420}>
         <Stack gap="lg">
           <div>
             <Title order={3}>Sign in</Title>

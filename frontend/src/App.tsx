@@ -12,7 +12,7 @@ export default function App() {
 
 const theme = createTheme({
   primaryColor: "royalGreen",
-  primaryShade: 6,
+  primaryShade: 5,
   fontFamily: `"Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif`,
   colors: {
     royalGreen: [
