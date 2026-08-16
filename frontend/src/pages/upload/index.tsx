@@ -190,9 +190,21 @@ function jumpToRow(gridRef: RefObject<AgGridReact<DisplayRow> | null>, id: strin
 
 function ErrorRowEntry({ row, onJump }: { row: InvalidRow; onJump: () => void }) {
   const [first, ...rest] = row.errors;
-  const tooltip = row.errors.map((e) => `${e.field}: ${e.message}`).join("\n");
   return (
-    <Tooltip label={<Text style={{ whiteSpace: "pre-line" }}>{tooltip}</Text>} multiline maw={360}>
+    <Tooltip
+      label={
+        <Text>
+          {row.errors.map((error, index) => (
+            <span key={`${error.field}-${index}`}>
+              {index > 0 && <br />}
+              {error.field}: {error.message}
+            </span>
+          ))}
+        </Text>
+      }
+      multiline
+      maw={360}
+    >
       <UnstyledButton onClick={onJump} className="block w-full rounded px-1.5 py-0.5 text-left hover:bg-orange-100">
         <Group gap="xs" wrap="nowrap">
           <Text size="sm" fw={600} miw={72}>

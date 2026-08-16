@@ -5,6 +5,8 @@ import Papa from "papaparse";
 import { claimSchema, type ValidClaim } from "@mano/validators";
 import { rpc } from "../lib/api.ts";
 
+const FIELD_LIST_FORMATTER = new Intl.ListFormat("en-US", { type: "unit" });
+
 export type AuthUser = { id: number; name: string; email: string };
 
 type CsvRow = Record<string, string>;
@@ -106,7 +108,7 @@ function toISODate(date: Date): string {
 
 function parseErrors(error: { issues: Array<{ path: PropertyKey[]; message: string }> }): ValidationError[] {
   return error.issues.map((issue) => ({
-    field: String(issue.path.at(0) ?? "unknown"),
+    field: issue.path.length > 0 ? FIELD_LIST_FORMATTER.format(issue.path.map(String)) : "unknown",
     message: issue.message,
   }));
 }
@@ -272,7 +274,12 @@ class AppStore {
     try {
       const res = await rpc.api.mrf.generate.$post({ json: claims });
       if (!res.ok) {
-        this.submitError = `Request failed (${res.status})`;
+        const { error } = await res.json();
+        const messages = error.issues.map((issue) => {
+          const field = issue.path.length > 0 ? `${FIELD_LIST_FORMATTER.format(issue.path.map(String))}: ` : "";
+          return `${field}${issue.message}`;
+        });
+        this.submitError = `Request failed: ${FIELD_LIST_FORMATTER.format(messages)}`;
         return;
       }
       this.submitSuccess = true;

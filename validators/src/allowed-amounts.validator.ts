@@ -66,6 +66,8 @@ const sharedPlanFields = {
   plan_market_type: z.enum(["group", "individual"], { error: "Plan market type must be 'group' or 'individual'" }),
 };
 
+const FIELD_LIST_FORMATTER = new Intl.ListFormat("en-US");
+
 /** z.strictObject rejects unknown keys, making this branch mutually exclusive with the plan branches — any plan field present in input will fail here */
 const NoPlanSchema = z.strictObject({ ...baseFields });
 
@@ -94,7 +96,7 @@ export const AllowedAmountsFileSchema = z.union([NoPlanSchema, HiosPlanSchema, E
     const present = PLAN_GROUP_FIELDS.filter((f) => input[f] !== undefined);
 
     if (present.length > 0 && missing.length > 0) {
-      return `Missing required plan fields: ${missing.join(", ")}`;
+      return `Missing required plan fields: ${FIELD_LIST_FORMATTER.format(missing)}`;
     }
     if (input["plan_id_type"] === "ein" && input["plan_sponsor_name"] === undefined) {
       return "plan_sponsor_name is required when plan_id_type is 'ein'";

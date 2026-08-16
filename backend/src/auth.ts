@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { sValidator } from "@hono/standard-validator";
+import { zValidator } from "@hono/zod-validator";
 import { SignJWT, jwtVerify } from "jose";
 import * as z from "zod";
 import { db } from "./db.js";
@@ -28,7 +28,7 @@ export const authRoutes = new Hono()
     const users = await db.selectFrom("users").select(["id", "name", "email"]).execute();
     return c.json(users);
   })
-  .post("/login", sValidator("json", z.object({ userId: z.number() })), async (c) => {
+  .post("/login", zValidator("json", z.object({ userId: z.number() })), async (c) => {
     const { userId } = c.req.valid("json");
     const user = await db.selectFrom("users").select(["id", "name", "email"]).where("id", "=", userId).executeTakeFirst();
     if (!user) return c.json({ error: "User not found" }, 404);
